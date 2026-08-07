@@ -4,7 +4,7 @@ import base64
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Ultra Pro Trading Analyst (100% Automatic)",
+    page_title="AI Ultra Pro Trading Analyst (Auto + Risk Lock)",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -25,9 +25,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 1. PENGAMBILAN HARGA SPOT & DATA PASAR OTOMATIS
-# ==========================================
+# PENGAMBILAN HARGA SPOT & DATA PASAR OTOMATIS
 def get_spot_price_mt5(pair_str):
     if not pair_str: return None
     p = pair_str.upper().replace("/", "").replace(" ", "").strip()
@@ -85,9 +83,6 @@ def fetch_klines(pair, timeframe="M15"):
         except Exception: pass
     return None, None, None
 
-# ==========================================
-# 2. PEMANGGIL AI GEMINI ENGINE
-# ==========================================
 def get_available_gemini_models(api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}"
     try:
@@ -124,12 +119,12 @@ def call_gemini_api(api_key, prompt, image_bytes=None, mime_type="image/jpeg"):
 st.sidebar.title("🔑 Pengaturan AI")
 api_key = st.sidebar.text_input("Masukkan Gemini API Key (Gratis):", type="password")
 
-st.title("⚡ AI Ultra Pro Analyst (100% Auto)")
-st.caption("SMC, Multi-Timeframe Confluence & Auto Price Stream")
+st.title("⚡ AI Ultra Pro Analyst (Auto + Risk Lock)")
+st.caption("SMC, Auto Price Stream & Strict Profit Protection Rules")
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. Kalender & News AI"])
 
-# TAB 1: BUAT SIGNAL PRO (SERBA OTOMATIS)
+# TAB 1: BUAT SIGNAL PRO
 with tab1:
     col1, col2 = st.columns(2)
     with col1: market = st.radio("Market:", ["Emas", "Crypto", "Forex"], label_visibility="collapsed")
@@ -139,13 +134,11 @@ with tab1:
         pair_select = st.selectbox("Pair:", options, label_visibility="collapsed")
         pair = st.text_input("Pair Kustom:").upper() if pair_select == "Tulis Sendiri..." else pair_select
 
-    # Cek Harga Otomatis di Background (Tanpa Kolom Input)
     auto_price = get_spot_price_mt5(pair) if pair else None
-    
     if auto_price:
         st.markdown(f"<div class='price-badge'>🟢 <b>Harga Real-Time Live:</b> {auto_price:,.4f}</div>", unsafe_allow_html=True)
     else:
-        st.markdown("<div class='price-badge'>⚡ <b>Sistem Siap:</b> Harga pasar akan ditarik otomatis saat analisis</div>", unsafe_allow_html=True)
+        st.markdown("<div class='price-badge'>⚡ <b>Sistem Siap:</b> Harga ditarik otomatis</div>", unsafe_allow_html=True)
 
     tf = st.select_slider("Timeframe Analisis Utama:", options=["M5", "M15", "M30", "H1", "H4", "D1"], value="M15")
     gaya = st.radio("Gaya Trading:", ["Scalping (Presisi M5/M15)", "Day Trade (Multi-Timeframe M15/H1)", "Swing (Struktur H4/D1)"], horizontal=True)
@@ -156,29 +149,28 @@ with tab1:
         else:
             try:
                 with st.spinner(f"📊 Menarik harga real-time {pair} & menganalisis pasar..."):
-                    # Tarik harga & indikator detik ini juga
                     live_p = get_spot_price_mt5(pair)
                     closes, highs, lows = fetch_klines(pair, timeframe=tf)
-                    
                     price_ref = live_p if live_p else "Harga Pasar Terkini"
                     tech_data = f"Harga Spot Real-Time Detik Ini: {price_ref}\n"
                     if closes and len(closes) >= 50:
                         tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: {calc_ema(closes, 20):.4f}\n- EMA 50: {calc_ema(closes, 50):.4f}\n- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Senior Institutional Trader & SMC Analyst.
+                    Bertindaklah sebagai Senior Institutional Trader & Risk Manager.
                     Analisis {pair} ({gaya}, TF {tf}).
                     
                     DATA PASAR REAL-TIME DETIK INI:
                     {tech_data}
                     
-                    INSTRUKSI KHUSUS UNTUK PASAR BERGERAK KENCANG:
-                    1. JANGAN HANYA MEMBERIKAN HARGA INSTANT. BERIKAN ZONA ENTRY (PENDING ORDER / LIMIT ZONE) agar user tidak ketinggalan momen saat pasar bergerak cepat.
-                    2. PATOKAN HARGA SAAT INI ADALAH {price_ref}.
-                    3. Berikan Keputusan: BUY / SELL / BUY LIMIT / SELL LIMIT / WAIT.
-                    4. Tentukan Entry Zone, Stop Loss (SL), Take Profit 1 (TP1), TP2, dan TP3 secara presisi.
-                    5. Berikan panduan pemindahan SL ke Breakeven (BE) setelah TP1 tersentuh.
-                    6. Jelaskan ALASAN LENGKAP (SMC, Order Block/FVG, Indikator).
+                    INSTRUKSI UNTUK MENGHINDARI KEJADIAN PROFIT BERBALIK RUGI:
+                    1. Patokan harga saat ini: {price_ref}.
+                    2. Berikan rekomendasi: BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT.
+                    3. Tentukan Entry Zone, Stop Loss (SL), TP1, TP2, TP3.
+                    4. 🛡️ ATURAN PENGAMANAN PROFIT KETAT (WAJIB ADA):
+                       - Tuliskan HARGA TEPAT kapan user HARUS memindahkan SL ke titik Entry (Breakeven / BE).
+                       - Tuliskan petunjuk kapan user HARUS melakukan Partial Close (Ambil Sebagian Profit) di MT5 agar tidak ada kasus $800 berbalik jadi rugi/SL.
+                    5. Jelaskan Alasan Teknikal & SMC secara logis.
                     """
                     result = call_gemini_api(api_key, prompt)
                     st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
@@ -199,7 +191,7 @@ with tab2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
-                Sertakan Direction, Pending Limit Zone / Entry, Stop Loss, Take Profit, dan Alasan Analisis Lengkap.
+                Sertakan Direction, Entry Zone, SL, TP, serta Aturan Pemicu Breakeven (BE) untuk mengamankan profit.
                 """
                 result = call_gemini_api(api_key, prompt)
                 st.markdown(result)
@@ -216,7 +208,7 @@ with tab3:
         if not api_key or not uploaded_file: st.error("⚠️ Masukkan API Key dan unggah gambar!")
         else:
             try:
-                prompt = f"Analisis screenshot chart {chart_pair} TF {chart_tf}. Tentukan Trend, SR, Order Block, Entry Zone (Limit), SL, TP, dan Alasan Kenapa BUY/SELL."
+                prompt = f"Analisis screenshot chart {chart_pair} TF {chart_tf}. Tentukan Trend, SR, Order Block, Entry Zone, SL, TP, Aturan Breakeven, dan Alasan Kenapa BUY/SELL."
                 result = call_gemini_api(api_key, prompt, uploaded_file.getvalue(), uploaded_file.type)
                 st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
                 st.markdown(result)
