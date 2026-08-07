@@ -4,7 +4,7 @@ import base64
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Ultra Pro Trading Analyst (Auto + Risk Lock)",
+    page_title="AI Ultra Pro Trading Analyst (Auto Key + Risk Lock)",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -24,6 +24,13 @@ st.markdown("""
     label, .stMarkdown, h1, h2, h3 { color: #ffffff !important; }
     </style>
 """, unsafe_allow_html=True)
+
+# LOGIKA PEMBACAAN API KEY OTOMATIS (SECRETS)
+if "GEMINI_API_KEY" in st.secrets:
+    api_key = st.secrets["GEMINI_API_KEY"]
+else:
+    api_key = st.sidebar.text_input("Masukkan Gemini API Key (Gratis):", type="password")
+    st.sidebar.caption("Dapatkan API Key di: [Google AI Studio](https://aistudio.google.com/)")
 
 # PENGAMBILAN HARGA SPOT & DATA PASAR OTOMATIS
 def get_spot_price_mt5(pair_str):
@@ -83,8 +90,8 @@ def fetch_klines(pair, timeframe="M15"):
         except Exception: pass
     return None, None, None
 
-def get_available_gemini_models(api_key):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}"
+def get_available_gemini_models(api_key_str):
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key_str.strip()}"
     try:
         res = requests.get(url, timeout=5)
         if res.status_code == 200:
@@ -93,9 +100,9 @@ def get_available_gemini_models(api_key):
     except Exception: pass
     return ["models/gemini-1.5-flash", "models/gemini-2.0-flash", "models/gemini-1.5-pro"]
 
-def call_gemini_api(api_key, prompt, image_bytes=None, mime_type="image/jpeg"):
-    if not api_key or len(api_key.strip()) < 10: raise ValueError("API Key Gemini belum diisi!")
-    clean_key = api_key.strip()
+def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg"):
+    if not api_key_str or len(api_key_str.strip()) < 10: raise ValueError("API Key Gemini belum diisi!")
+    clean_key = api_key_str.strip()
     if mime_type == "image/jpg": mime_type = "image/jpeg"
     models = get_available_gemini_models(clean_key)
     models.sort(key=lambda x: 0 if 'flash' in x else 1)
@@ -116,10 +123,7 @@ def call_gemini_api(api_key, prompt, image_bytes=None, mime_type="image/jpeg"):
     raise Exception(f"Gagal memanggil AI: {last_err}")
 
 # UI STREAMLIT
-st.sidebar.title("🔑 Pengaturan AI")
-api_key = st.sidebar.text_input("Masukkan Gemini API Key (Gratis):", type="password")
-
-st.title("⚡ AI Ultra Pro Analyst (Auto + Risk Lock)")
+st.title("⚡ AI Ultra Pro Analyst")
 st.caption("SMC, Auto Price Stream & Strict Profit Protection Rules")
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. Kalender & News AI"])
@@ -144,7 +148,7 @@ with tab1:
     gaya = st.radio("Gaya Trading:", ["Scalping (Presisi M5/M15)", "Day Trade (Multi-Timeframe M15/H1)", "Swing (Struktur H4/D1)"], horizontal=True)
 
     if st.button("Buat Signal Ultra Pro (Auto)", key="btn_signal"):
-        if not api_key: st.error("⚠️ Masukkan API Key di Sidebar!")
+        if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
         elif not pair: st.warning("⚠️ Pilih pair terlebih dahulu!")
         else:
             try:
@@ -169,7 +173,7 @@ with tab1:
                     3. Tentukan Entry Zone, Stop Loss (SL), TP1, TP2, TP3.
                     4. 🛡️ ATURAN PENGAMANAN PROFIT KETAT (WAJIB ADA):
                        - Tuliskan HARGA TEPAT kapan user HARUS memindahkan SL ke titik Entry (Breakeven / BE).
-                       - Tuliskan petunjuk kapan user HARUS melakukan Partial Close (Ambil Sebagian Profit) di MT5 agar tidak ada kasus $800 berbalik jadi rugi/SL.
+                       - Tuliskan petunjuk kapan user HARUS melakukan Partial Close (Ambil Sebagian Profit) di MT5 agar tidak ada kasus profit berbalik jadi rugi/SL.
                     5. Jelaskan Alasan Teknikal & SMC secara logis.
                     """
                     result = call_gemini_api(api_key, prompt)
@@ -181,7 +185,7 @@ with tab1:
 # TAB 2: SIGNAL HARI INI
 with tab2:
     if st.button("Tampilkan Signal Harian", key="btn_daily"):
-        if not api_key: st.error("⚠️ Masukkan API Key!")
+        if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
         else:
             try:
                 gold_p = get_spot_price_mt5("XAUUSD")
@@ -205,7 +209,7 @@ with tab3:
     chart_tf = st.selectbox("Timeframe Chart:", ["M5", "M15", "M30", "H1", "H4", "D1"], index=1)
 
     if st.button("Analisa Chart Vision", key="btn_chart"):
-        if not api_key or not uploaded_file: st.error("⚠️ Masukkan API Key dan unggah gambar!")
+        if not api_key or not uploaded_file: st.error("⚠️ API Key belum dikonfigurasi atau gambar belum diunggah!")
         else:
             try:
                 prompt = f"Analisis screenshot chart {chart_pair} TF {chart_tf}. Tentukan Trend, SR, Order Block, Entry Zone, SL, TP, Aturan Breakeven, dan Alasan Kenapa BUY/SELL."
@@ -223,7 +227,7 @@ with tab4:
     news_input = st.text_area("Tulis/Tempel berita ekonomi yang ingin dianalisis:", height=100)
     
     if st.button("Analisis Dampak Berita Ke Market", key="btn_news"):
-        if not api_key: st.error("⚠️ Masukkan API Key di Sidebar!")
+        if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
         else:
             try:
                 with st.spinner("🤖 Menganalisis sentimen berita..."):
