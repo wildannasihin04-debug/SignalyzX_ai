@@ -52,23 +52,32 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Function Otomatis Pilih Model Gemini yang Aktif
-def get_active_model(api_key):
+# Fungsi Eksekusi AI dengan Auto-Fallback Model jika terjadi Error 404
+def generate_ai_response(api_key, prompt, image=None):
     genai.configure(api_key=api_key)
-    # Mencari model yang tersedia di API key pengguna
-    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
     
-    # Prioritaskan model flash
-    for m in available_models:
-        if 'flash' in m:
-            return genai.GenerativeModel(m)
+    # Daftar kandidat model Gemini dari yang terbaru hingga standar
+    candidate_models = [
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-pro'
+    ]
+    
+    last_error = None
+    for model_name in candidate_models:
+        try:
+            model = genai.GenerativeModel(model_name)
+            if image:
+                response = model.generate_content([prompt, image])
+            else:
+                response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            last_error = e
+            continue  # Coba model berikutnya jika model ini gagal/404
             
-    # Jika flash tidak ada, pakai model pertama yang mendukung
-    if available_models:
-        return genai.GenerativeModel(available_models[0])
-    
-    # Fallback default jika tidak terdeteksi
-    return genai.GenerativeModel('gemini-1.5-flash')
+    raise Exception(f"Gagal menghubungkan ke model AI Google. Detail error: {last_error}")
 
 # SIDEBAR: KUNCI API
 st.sidebar.title("🔑 Pengaturan AI")
@@ -111,7 +120,6 @@ with tab1:
         else:
             try:
                 with st.spinner("🤖 AI sedang menghubungkan server & menyusun signal..."):
-                    model = get_active_model(api_key)
                     prompt = f"""
                     Bertindaklah sebagai Senior Trader. Analisis pair {pair} dengan strategi {gaya}.
                     Format respon:
@@ -126,9 +134,9 @@ with tab1:
                     - RINGKASAN TEKNIKAL: [Penjelasan singkat EMA, RSI, Candle]
                     - SIGNAL BATAL KALAU: [Kondisi batal]
                     """
-                    response = model.generate_content(prompt)
+                    result_text = generate_ai_response(api_key, prompt)
                     st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
-                    st.markdown(response.text)
+                    st.markdown(result_text)
                     st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"Terjadi kesalahan: {e}")
@@ -142,10 +150,9 @@ with tab2:
         else:
             try:
                 with st.spinner("Memuat signal harian..."):
-                    model = get_active_model(api_key)
                     prompt = "Berikan 2 signal trading harian terbaik hari ini untuk XAUUSD dan BTCUSDT lengkap dengan Entry, Stop Loss, Take Profit, dan Alasan Analisis."
-                    res = model.generate_content(prompt)
-                    st.markdown(res.text)
+                    result_text = generate_ai_response(api_key, prompt)
+                    st.markdown(result_text)
             except Exception as e:
                 st.error(f"Error: {e}")
 
@@ -171,11 +178,10 @@ with tab3:
         else:
             try:
                 with st.spinner("🤖 AI Vision sedang menganalisis pola chart..."):
-                    model = get_active_model(api_key)
                     prompt = f"Analisis chart {chart_pair} timeframe {tf} ini. Tentukan Tren, Pattern, Support/Resistance, dan Signal (BUY/SELL) beserta SL/TP."
-                    response = model.generate_content([prompt, image])
+                    result_text = generate_ai_response(api_key, prompt, image)
                     st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
-                    st.markdown(response.text)
+                    st.markdown(result_text)
                     st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e:
                 st.error(f"Error: {e}")
