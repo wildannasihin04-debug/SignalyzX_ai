@@ -4,23 +4,23 @@ import base64
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Pro Trading Analyst (TradingView Style)",
+    page_title="AI Pro Trading Analyst (Binance Gold VIP)",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS TradingView Style
+# Custom CSS Binance Gold VIP
 st.markdown("""
     <style>
-    .stApp { background-color: #131722; color: #d1d4dc; font-family: 'Trebuchet MS', sans-serif; }
-    div[data-baseweb="tab-list"] { background-color: #1e222d; border-radius: 6px; padding: 4px; }
-    div[data-baseweb="tab"] { color: #787b86; font-size: 14px; font-weight: 600; }
-    div[aria-selected="true"] { background-color: #2962ff !important; color: #ffffff !important; border-radius: 4px; }
-    .stButton>button { background: linear-gradient(90deg, #2962ff 0%, #1e53e5 100%); color: #ffffff; border-radius: 6px; border: none; font-weight: bold; padding: 12px; box-shadow: 0 4px 12px rgba(41,98,255,0.3); }
-    .stButton>button:hover { background: #1e53e5; transform: translateY(-1px); }
-    .card-signal { background-color: #1e222d; border: 1px solid #2a2e39; border-radius: 8px; padding: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
-    .metric-card { background-color: #1e222d; padding: 12px; border-radius: 6px; border-left: 4px solid #2962ff; margin-bottom: 15px; font-size: 14px; color: #d1d4dc; }
-    .stSelectbox>div>div, .stNumberInput>div>div>input, .stTextInput>div>div>input { background-color: #1e222d !important; color: #ffffff !important; border: 1px solid #363a45 !important; border-radius: 6px !important; }
+    .stApp { background-color: #0b0e11; color: #eaecef; font-family: 'Inter', sans-serif; }
+    div[data-baseweb="tab-list"] { background-color: #181a20; border-radius: 8px; padding: 6px; border: 1px solid #2b313a; }
+    div[data-baseweb="tab"] { color: #848e9c; font-weight: 600; }
+    div[aria-selected="true"] { background-color: #f0b90b !important; color: #0b0e11 !important; border-radius: 6px; font-weight: bold; }
+    .stButton>button { background: linear-gradient(180deg, #fcd535 0%, #f0b90b 100%); color: #0b0e11; font-weight: 800; border-radius: 8px; border: none; padding: 14px; letter-spacing: 0.5px; }
+    .stButton>button:hover { background: #fcd535; box-shadow: 0 0 15px rgba(240,185,11,0.4); }
+    .card-signal { background-color: #181a20; border: 1px solid #2b313a; border-radius: 12px; padding: 22px; border-left: 5px solid #f0b90b; }
+    .metric-card { background-color: #181a20; padding: 12px; border-radius: 6px; border-left: 4px solid #f0b90b; margin-bottom: 15px; font-size: 14px; color: #eaecef; }
+    .stSelectbox>div>div, .stNumberInput>div>div>input, .stTextInput>div>div>input { background-color: #2b313a !important; color: #f0b90b !important; border-radius: 6px !important; }
     label, .stMarkdown, h1, h2, h3 { color: #ffffff !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -119,8 +119,8 @@ def call_gemini_api(api_key, prompt, image_bytes=None, mime_type="image/jpeg"):
 st.sidebar.title("🔑 Pengaturan AI")
 api_key = st.sidebar.text_input("Masukkan Gemini API Key:", type="password")
 
-st.title("⚡ AI Pro Analyst")
-st.caption("TradingView Style • Precision Technical Analysis")
+st.title("⚡ AI Gold VIP Analyst")
+st.caption("Binance Gold Style • Precision Technical Analysis")
 
 tab1, tab2, tab3 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart"])
 
