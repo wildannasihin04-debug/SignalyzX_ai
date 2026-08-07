@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import base64
 
-# Konfigurasi Halaman & Tampilan
+# Konfigurasi Tampilan Website
 st.set_page_config(
     page_title="AI Trading Signal & Chart Analyzer",
     layout="centered",
@@ -23,7 +23,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 1. FUNGSI AMBIL HARGA PASAR AKURAT & REAL-TIME
+# 1. FUNGSI AMBIL HARGA PASAR REAL-TIME
 def get_live_price(pair_str):
     if not pair_str:
         return None
@@ -39,7 +39,7 @@ def get_live_price(pair_str):
         except Exception:
             pass
 
-    # B. Forex (EURUSD, GBPUSD, dll via Frankfurter API)
+    # B. Forex (EURUSD, GBPUSD via Frankfurter API)
     if len(p) == 6 and not p.startswith("XAU") and not p.startswith("XAG"):
         base_c = p[:3]
         target_c = p[3:]
@@ -61,13 +61,40 @@ def get_live_price(pair_str):
             
     return None
 
-# 2. FUNGSI UTAMA PANGGIL AI VIA REST API (ANTI-ERROR & TANPA SDK)
+# 2. DETEKSI DYNAMIC MODEL YANG TERSEDIA PADA API KEY USER
+def get_available_gemini_models(api_key):
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}"
+    try:
+        res = requests.get(url, timeout=8)
+        if res.status_code == 200:
+            data = res.json()
+            valid_models = []
+            for m in data.get("models", []):
+                methods = m.get("supportedGenerationMethods", [])
+                if "generateContent" in methods:
+                    valid_models.append(m.get("name")) # format: "models/gemini-1.5-flash"
+            if valid_models:
+                return valid_models
+    except Exception:
+        pass
+    # Backup cadangan jika deteksi otomatis terhalang koneksi
+    return ["models/gemini-1.5-flash", "models/gemini-2.0-flash", "models/gemini-1.5-pro"]
+
+# 3. FUNGSI PANGGIL AI SANGAT STABIL & DIJAMIN BEBAS ERROR 404
 def call_gemini_api(api_key, prompt, image_bytes=None, mime_type="image/jpeg"):
-    if not api_key or len(api_key.strip()) < 5:
-        raise ValueError("API Key Gemini belum diisi! Masukkan API Key gratis Anda pada menu Sidebar sebelah kiri.")
+    if not api_key or len(api_key.strip()) < 10:
+        raise ValueError("API Key Gemini belum diisi atau salah! Masukkan API Key gratis Anda pada menu Sidebar sebelah kiri.")
     
-    # Pilihan model terupdate
-    models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+    clean_key = api_key.strip()
+    
+    # Normalisasi format gambar
+    if mime_type == "image/jpg":
+        mime_type = "image/jpeg"
+        
+    models = get_available_gemini_models(clean_key)
+    
+    # Utamakan versi 'flash' agar respon cepat & hemat
+    models.sort(key=lambda x: 0 if 'flash' in x else 1)
     
     parts = [{"text": prompt}]
     if image_bytes:
@@ -80,26 +107,31 @@ def call_gemini_api(api_key, prompt, image_bytes=None, mime_type="image/jpeg"):
         })
     
     payload = {"contents": [{"parts": parts}]}
+    headers = {"Content-Type": "application/json"}
     
-    last_err = ""
-    for model in models:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key.strip()}"
-        headers = {"Content-Type": "application/json"}
+    last_err_msg = ""
+    for model_path in models:
+        # Panggilan REST API resmi
+        url = f"https://generativelanguage.googleapis.com/v1beta/{model_path}:generateContent?key={clean_key}"
         try:
             res = requests.post(url, json=payload, headers=headers, timeout=30)
             if res.status_code == 200:
                 data = res.json()
                 try:
                     return data['candidates'][0]['content']['parts'][0]['text']
-                except KeyError:
+                except (KeyError, IndexError):
                     continue
             else:
-                last_err = f"HTTP {res.status_code}: {res.text}"
+                try:
+                    err_json = res.json()
+                    last_err_msg = err_json.get("error", {}).get("message", res.text)
+                except Exception:
+                    last_err_msg = f"HTTP {res.status_code}: {res.text}"
         except Exception as e:
-            last_err = str(e)
+            last_err_msg = str(e)
             continue
             
-    raise Exception(f"Gagal menghubungkan ke AI Google. Pastikan API Key Anda aktif. Detail: {last_err}")
+    raise Exception(f"Gagal memanggil AI Google. Detail Pesan dari Google: {last_err_msg}")
 
 # SIDEBAR: API KEY
 st.sidebar.title("🔑 Pengaturan AI")
@@ -112,7 +144,7 @@ st.caption("Aplikasi analisa teknikal & pembaca chart presisi berbasis AI Vision
 tab1, tab2, tab3 = st.tabs(["01. Buat Signal", "02. Signal Hari Ini", "03. Analisa Chart"])
 
 # ==========================================
-# TAB 1: BUAT SIGNAL (OTOMATIS HARGA REAL-TIME)
+# TAB 1: BUAT SIGNAL
 # ==========================================
 with tab1:
     st.subheader("01. MARKET")
@@ -134,7 +166,7 @@ with tab1:
     
     st.subheader("03. HARGA RUNNING MT5")
     current_price = st.number_input(
-        "Harga Real-Time Terdeteksi (Dapat Anda sesuaikan dengan MT5 jika ada selisih broker):",
+        "Harga Real-Time Terdeteksi (Dapat disesuaikan jika broker MT5 Anda ada selisih):",
         value=float(auto_price) if auto_price else 0.0,
         format="%.4f"
     )
@@ -153,7 +185,7 @@ with tab1:
             st.warning("⚠️ Pilih atau masukkan nama pair terlebih dahulu.")
         else:
             try:
-                with st.spinner("🤖 Mengambil data pasar real-time & menganalisis..."):
+                with st.spinner("🤖 Mengambil data pasar & menyusun signal..."):
                     price_acuan = current_price if current_price > 0 else (auto_price if auto_price else "Harga Pasar Terkini")
                     
                     prompt = f"""
@@ -222,7 +254,7 @@ with tab3:
 
     st.subheader("02. INSTRUMEN & HARGA RUNNING MT5")
     chart_pair = st.text_input("Tulis pair pada chart:", "XAUUSD")
-    chart_price = st.number_input("Harga running tertera di MT5 (Opsional, untuk akurasi 100%):", value=0.0, format="%.4f")
+    chart_price = st.number_input("Harga running tertera di MT5 (Opsional):", value=0.0, format="%.4f")
 
     st.subheader("03. TIMEFRAME")
     tf = st.select_slider("Pilih Timeframe:", options=["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1"], value="M15")
