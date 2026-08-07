@@ -52,32 +52,43 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Fungsi Eksekusi AI dengan Auto-Fallback Model jika terjadi Error 404
+# Fungsi Eksekusi AI Dinamis (Otomatis Deteksi & Bersihkan Nama Model Aktif)
 def generate_ai_response(api_key, prompt, image=None):
     genai.configure(api_key=api_key)
     
-    # Daftar kandidat model Gemini dari yang terbaru hingga standar
-    candidate_models = [
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-pro'
-    ]
-    
+    # 1. Ambil daftar model resmi yang tersedia di akun Google AI pengguna
+    active_models = []
+    try:
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                # Bersihkan awalan 'models/' dari respon API
+                clean_name = m.name.replace('models/', '')
+                active_models.append(clean_name)
+    except Exception:
+        pass
+
+    # 2. Jika daftar model tidak terdeteksi, gunakan daftar cadangan umum
+    if not active_models:
+        active_models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+
+    # Urutkan agar model versi 'flash' dicoba terlebih dahulu (lebih cepat & gratis)
+    active_models.sort(key=lambda name: 0 if 'flash' in name else 1)
+
+    # 3. Coba panggil model satu per satu hingga berhasil
     last_error = None
-    for model_name in candidate_models:
+    for model_name in active_models:
         try:
             model = genai.GenerativeModel(model_name)
             if image:
-                response = model.generate_content([prompt, image])
+                res = model.generate_content([prompt, image])
             else:
-                response = model.generate_content(prompt)
-            return response.text
+                res = model.generate_content(prompt)
+            return res.text
         except Exception as e:
             last_error = e
-            continue  # Coba model berikutnya jika model ini gagal/404
-            
-    raise Exception(f"Gagal menghubungkan ke model AI Google. Detail error: {last_error}")
+            continue
+
+    raise Exception(f"Gagal memanggil AI. Detail: {last_error}")
 
 # SIDEBAR: KUNCI API
 st.sidebar.title("🔑 Pengaturan AI")
