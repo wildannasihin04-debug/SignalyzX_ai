@@ -4,7 +4,7 @@ import base64
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Ultra Pro Trading Analyst (Auto + Real Price Fix)",
+    page_title="AI Ultra Pro Analyst (SMC & Strict 1:2 RR)",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -33,7 +33,7 @@ else:
     api_key = st.sidebar.text_input("Masukkan Gemini API Key (Gratis):", type="password")
     st.sidebar.caption("Dapatkan API Key di: [Google AI Studio](https://aistudio.google.com/)")
 
-# PENGAMBILAN HARGA SPOT REAL-TIME DARI PROVIDER BEBAS BLOKIR (COINBASE / COINCAP / GOLD-API / FRANKFURTER)
+# PENGAMBILAN HARGA SPOT REAL-TIME DARI PROVIDER BEBAS BLOKIR
 def get_spot_price_mt5(pair_str):
     if not pair_str: return None
     p = pair_str.upper().replace("/", "").replace(" ", "").strip()
@@ -45,7 +45,7 @@ def get_spot_price_mt5(pair_str):
             if r.status_code == 200: return float(r.json()["price"])
         except Exception: pass
 
-    # B. CRYPTO (Coinbase & CoinCap API - Bebas blokir IP US Streamlit Cloud)
+    # B. CRYPTO (Coinbase / CoinCap API)
     crypto_symbols = {
         "BTCUSDT": "BTC", "BTC": "BTC",
         "ETHUSDT": "ETH", "ETH": "ETH",
@@ -54,26 +54,16 @@ def get_spot_price_mt5(pair_str):
         "BNBUSDT": "BNB", "BNB": "BNB",
         "DOGEUSDT": "DOGE", "DOGE": "DOGE"
     }
-    
-    coin_code = crypto_symbols.get(p)
-    if not coin_code and "USDT" in p:
-        coin_code = p.replace("USDT", "")
-        
+    coin_code = crypto_symbols.get(p, p.replace("USDT", "") if "USDT" in p else None)
     if coin_code:
-        # Try Coinbase API
         try:
             r = requests.get(f"https://api.coinbase.com/v2/prices/{coin_code}-USD/spot", timeout=3)
-            if r.status_code == 200:
-                return float(r.json()["data"]["amount"])
+            if r.status_code == 200: return float(r.json()["data"]["amount"])
         except Exception: pass
-        
-        # Try CoinCap API Backup
         try:
-            coin_map = {"BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "XRP": "xrp", "BNB": "binance-coin", "DOGE": "dogecoin"}
-            slug = coin_map.get(coin_code, coin_code.lower())
-            r = requests.get(f"https://api.coincap.io/v2/assets/{slug}", timeout=3)
-            if r.status_code == 200:
-                return float(r.json()["data"]["priceUsd"])
+            coin_map = {"BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "XRP": "xrp", "BNB": "binance-coin"}
+            r = requests.get(f"https://api.coincap.io/v2/assets/{coin_map.get(coin_code, coin_code.lower())}", timeout=3)
+            if r.status_code == 200: return float(r.json()["data"]["priceUsd"])
         except Exception: pass
 
     # C. FOREX SPOT (Frankfurter API)
@@ -109,7 +99,6 @@ def calc_rsi(prices, period=14):
 
 def fetch_klines(pair, timeframe="M15"):
     s = pair.upper().replace("/", "").replace(" ", "").strip()
-    # Fetch candles via KuCoin API (Unblocked on US AWS)
     crypto_symbols = {"BTCUSDT": "BTC-USDT", "ETHUSDT": "ETH-USDT", "SOLUSDT": "SOL-USDT", "XRPUSDT": "XRP-USDT", "BNBUSDT": "BNB-USDT"}
     kucoin_sym = crypto_symbols.get(s, f"{s.replace('USDT', '')}-USDT" if "USDT" in s else None)
     
@@ -161,67 +150,81 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
     raise Exception(f"Gagal memanggil AI: {last_err}")
 
 # UI STREAMLIT
-st.title("⚡ AI Ultra Pro Analyst")
-st.caption("SMC, Unblocked Auto Price Stream & Strict Profit Protection Rules")
+st.title("⚡ AI Ultra Pro Analyst (SMC & 1:2 RR)")
+st.caption("Smart Money Concepts • Multi-Timeframe Structure • Strict Risk/Reward 1:2+")
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. Kalender & News AI"])
 
 # TAB 1: BUAT SIGNAL PRO
 with tab1:
     col1, col2 = st.columns(2)
-    with col1: market = st.radio("Market:", ["Crypto", "Emas", "Forex"], label_visibility="collapsed")
+    with col1: market = st.radio("Market:", ["Emas", "Crypto", "Forex"], label_visibility="collapsed")
     with col2:
-        options = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT"] if market == "Crypto" else (["XAUUSD", "XAGUSD"] if market == "Emas" else ["EURUSD", "GBPUSD", "USDJPY"])
+        options = ["XAUUSD", "XAGUSD"] if market == "Emas" else (["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT"] if market == "Crypto" else ["EURUSD", "GBPUSD", "USDJPY"])
         options.append("Tulis Sendiri...")
         pair_select = st.selectbox("Pilih Pair:", options, label_visibility="collapsed")
         pair = st.text_input("Pair Kustom:").upper() if pair_select == "Tulis Sendiri..." else pair_select
 
     auto_price = get_spot_price_mt5(pair) if pair else None
     if auto_price:
-        st.markdown(f"<div class='price-badge-green'>🟢 <b>Harga Real-Time Live (Coinbase/Spot):</b> ${auto_price:,.2f}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='price-badge-green'>🟢 <b>Harga Real-Time Live:</b> {auto_price:,.4f}</div>", unsafe_allow_html=True)
     else:
         st.markdown("<div class='price-badge-red'>⚠️ <b>Sistem Siap:</b> Menghubungkan ke API Pasar...</div>", unsafe_allow_html=True)
 
     tf = st.select_slider("Timeframe Analisis Utama:", options=["M5", "M15", "M30", "H1", "H4", "D1"], value="M15")
-    gaya = st.radio("Gaya Trading:", ["Scalping (Presisi M5/M15)", "Day Trade (Multi-Timeframe M15/H1)", "Swing (Struktur H4/D1)"], horizontal=True)
+    gaya = st.radio("Gaya Trading:", ["Scalping (Ketats M5/M15)", "Day Trade (Multi-Timeframe M15/H1)", "Swing (Struktur H4/D1)"], horizontal=True)
 
     if st.button("Buat Signal Ultra Pro (Auto)", key="btn_signal"):
         if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
         elif not pair: st.warning("⚠️ Pilih pair terlebih dahulu!")
         else:
             try:
-                with st.spinner(f"📊 Menarik harga real-time {pair} & menganalisis pasar..."):
+                with st.spinner(f"📊 Menarik data SMC & harga real-time {pair}..."):
                     live_p = get_spot_price_mt5(pair)
                     closes, highs, lows = fetch_klines(pair, timeframe=tf)
                     
-                    if not live_p and not closes:
-                        st.error("Gagal mengambil harga real-time. Periksa koneksi internet atau nama pair Anda.")
-                    else:
-                        price_ref = f"${live_p:,.2f}" if live_p else (f"${closes[-1]:,.2f}" if closes else "Harga Pasar Terkini")
-                        tech_data = f"Harga Spot Real-Time Detik Ini: {price_ref}\n"
-                        if closes and len(closes) >= 50:
-                            tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: ${calc_ema(closes, 20):,.2f}\n- EMA 50: ${calc_ema(closes, 50):,.2f}\n- High 50-Candle: ${max(highs[-50:]):,.2f}\n- Low 50-Candle: ${min(lows[-50:]):,.2f}\n"
+                    price_ref = f"{live_p:,.4f}" if live_p else (f"{closes[-1]:,.4f}" if closes else "Harga Pasar Terkini")
+                    tech_data = f"Harga Spot Real-Time Detik Ini: {price_ref}\n"
+                    if closes and len(closes) >= 50:
+                        tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: {calc_ema(closes, 20):.4f}\n- EMA 50: {calc_ema(closes, 50):.4f}\n- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
 
-                        prompt = f"""
-                        Bertindaklah sebagai Senior Institutional Trader & Risk Manager.
-                        Analisis {pair} ({gaya}, TF {tf}).
-                        
-                        DATA PASAR REAL-TIME DETIK INI:
-                        {tech_data}
-                        
-                        INSTRUKSI SANGAT KETAT:
-                        1. GUNAKAN HARGA REAL-TIME SEKARANG {price_ref} SEBAGAI PATOKAN MUTLAK. JANGAN MENGARANG ANGKA HARGA DILUAR ANGKA {price_ref}!
-                        2. Berikan rekomendasi: BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT.
-                        3. Tentukan Entry Zone, Stop Loss (SL), TP1, TP2, TP3.
-                        4. 🛡️ ATURAN PENGAMANAN PROFIT KETAT (WAJIB ADA):
-                           - Tuliskan HARGA TEPAT kapan user HARUS memindahkan SL ke titik Entry (Breakeven / BE).
-                           - Tuliskan petunjuk kapan user HARUS melakukan Partial Close di MT5 agar tidak berbalik rugi.
-                        5. Jelaskan Alasan Teknikal & SMC secara logis.
-                        """
-                        result = call_gemini_api(api_key, prompt)
-                        st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
-                        st.markdown(result)
-                        st.markdown("</div>", unsafe_allow_html=True)
+                    prompt = f"""
+                    Bertindaklah sebagai Institutional Smart Money Concepts (SMC) Trader & Risk Manager Ketat.
+                    Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
+                    
+                    DATA PASAR REAL-TIME DETIK INI:
+                    {tech_data}
+                    
+                    ATURAN RISK MANAGEMENT KETAT (WAJIB DIPATUHI):
+                    1. PATOKAN HARGA SEKARANG ADALAH {price_ref}.
+                    2. JARAK STOP LOSS (SL) HARUS KETAT DAN RAPAT! Letakkan SL tepat di belakang FVG / Order Block terdekat (misal 15-30 pips). DILARANG KERAS MEMBUAT SL YANG TERLALU JAUH!
+                    3. RASIO RISK-TO-REWARD (RR) WAJIB MINIMAL 1:2!
+                       - TP1 WAJIB Minimal 2x Jarak SL (Contoh: Jika SL = 30 pips, maka TP1 minimal 60 pips dari Entry).
+                       - TP2 = Minimal 3x Jarak SL.
+                       - TP3 = Minimal 4x Jarak SL.
+                    
+                    ANALISIS SMART MONEY CONCEPTS (SMC) BERDASARKAN CANDLE TERBARU (1H, 4H, 1D):
+                    - CHoCH (Change of Character): Evaluasi apakah ada perubahan karakter arah tren candle 1-4 jam terakhir.
+                    - BOS (Break of Structure): Identifikasi area penembusan struktur candle terbaru.
+                    - FVG / GAP (Fair Value Gap): Tentukan area ketidakseimbangan harga sebagai titik Entry Zone (Limit).
+                    - Order Block (OB): Tentukan area jejak institusi terdekat.
+
+                    FORMAT OUTPUT:
+                    - PAIR & HARGA SPOT: {pair} @ {price_ref}
+                    - REKOMENDASI: [BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
+                    - ANALISIS SMC (CHoCH, BOS, FVG, OB): [Penjelasan ringkas candle 1-4 jam terakhir]
+                    - ENTRY ZONE: [Harga Entry Presisi di FVG/OB]
+                    - STOP LOSS (SL KETAT): [Harga SL Rapat]
+                    - TAKE PROFIT 1 (RR 1:2): [Harga TP1 Minimal 2x Jarak SL]
+                    - TAKE PROFIT 2 (RR 1:3): [Harga TP2]
+                    - TAKE PROFIT 3 (RR 1:4): [Harga TP3]
+                    - ATURAN PENGAMANAN PROFIT: [Harga pemicu geser SL ke Breakeven / BE & Partial Close]
+                    - ALASAN TEKNIKAL LENGKAP: [Kenapa BUY / Kenapa SELL]
+                    """
+                    result = call_gemini_api(api_key, prompt)
+                    st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
+                    st.markdown(result)
+                    st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e: st.error(f"Error: {e}")
 
 # TAB 2: SIGNAL HARI INI
@@ -233,12 +236,11 @@ with tab2:
                 gold_p = get_spot_price_mt5("XAUUSD")
                 btc_p = get_spot_price_mt5("BTCUSDT")
                 prompt = f"""
-                Berikan 2 signal harian terbaik hari ini berdasarkan SMC & Market Real-Time:
-                1. XAUUSD (Harga Live Spot: ${gold_p:,.2f} jika ada)
-                2. BTCUSDT (Harga Live Spot: ${btc_p:,.2f} jika ada)
+                Berikan 2 signal harian terbaik hari ini berdasarkan SMC (CHoCH, BOS, FVG) & RR Minimal 1:2:
+                1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
+                2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
-                Sertakan Direction, Entry Zone, SL, TP, serta Aturan Pemicu Breakeven (BE) untuk mengamankan profit.
-                JANGAN MENGARANG HARGA DILUAR ANGKA PASAR SAAT INI.
+                WAJIB: SL Ketat, TP1 Minimal 2x Jarak SL (RR 1:2), serta Aturan Pemicu Breakeven (BE).
                 """
                 result = call_gemini_api(api_key, prompt)
                 st.markdown(result)
@@ -248,14 +250,18 @@ with tab2:
 with tab3:
     uploaded_file = st.file_uploader("Upload Chart:", type=["png", "jpg", "jpeg", "webp"])
     if uploaded_file: st.image(uploaded_file, caption="Chart diunggah")
-    chart_pair = st.text_input("Pair Chart:", "BTCUSDT")
+    chart_pair = st.text_input("Pair Chart:", "XAUUSD")
     chart_tf = st.selectbox("Timeframe Chart:", ["M5", "M15", "M30", "H1", "H4", "D1"], index=1)
 
     if st.button("Analisa Chart Vision", key="btn_chart"):
         if not api_key or not uploaded_file: st.error("⚠️ API Key belum dikonfigurasi atau gambar belum diunggah!")
         else:
             try:
-                prompt = f"Analisis screenshot chart {chart_pair} TF {chart_tf}. Tentukan Trend, SR, Order Block, Entry Zone, SL, TP, Aturan Breakeven, dan Alasan Kenapa BUY/SELL."
+                prompt = f"""
+                Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya SMC Analyst.
+                Identifikasi: CHoCH, BOS, FVG, dan Order Block pada gambar.
+                Tentukan: Entry Zone, SL Ketat, TP1 (Wajib RR Minimal 1:2), TP2, TP3, dan Aturan Breakeven.
+                """
                 result = call_gemini_api(api_key, prompt, uploaded_file.getvalue(), uploaded_file.type)
                 st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
                 st.markdown(result)
@@ -274,7 +280,7 @@ with tab4:
         else:
             try:
                 with st.spinner("🤖 Menganalisis sentimen berita..."):
-                    query = news_input if news_input else "Analisis peristiwa berita ekonomi utama minggu ini (NFP, CPI, FOMC) dan dampaknya terhadap Emas (XAUUSD), Dolar (USD), dan Bitcoin."
+                    query = news_input if news_input else "Analisis berita ekonomi utama minggu ini (NFP, CPI, FOMC) dan dampaknya terhadap Emas (XAUUSD), Dolar (USD), dan Bitcoin."
                     prompt = f"""
                     Analisis berita / kondisi ekonomi berikut:
                     "{query}"
