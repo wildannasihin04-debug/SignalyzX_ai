@@ -27,6 +27,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# INISIALISASI MEMORI SESSION STATE (AUTO-SAVE SIGNAL)
+if "last_signal" not in st.session_state:
+    st.session_state["last_signal"] = None
+if "signal_history" not in st.session_state:
+    st.session_state["signal_history"] = []
+
 # LOGIKA PEMBACAAN API KEY OTOMATIS (SECRETS)
 if "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
@@ -171,7 +177,7 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
 
 # UI STREAMLIT
 st.title("⚡ AI Ultra Session SMC Analyst")
-st.caption("Session Killzones • Session Liquidity Sweep • Pro Dashboard UI")
+st.caption("Anti-Fakeout SMC • Auto News Warning • Pro Dashboard UI")
 
 # INFORMASI SESI REAL-TIME
 wib_time, active_sessions, current_killzone = get_market_session_info()
@@ -183,7 +189,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. Kalender & News AI"])
+tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. 📜 Riwayat Signal"])
 
 # PROMPT FORMAT LAYOUT PRO DASHBOARD (CARD STYLED)
 CARD_LAYOUT_INSTRUCTION = """
@@ -223,6 +229,11 @@ Gunakan format HTML Card berikut untuk menyajikan bagian Parameter Eksekusi agar
 
 # TAB 1: BUAT SIGNAL PRO
 with tab1:
+    if st.session_state["last_signal"] is not None:
+        last = st.session_state["last_signal"]
+        with st.expander(f"📌 SIGNAL TERAKHIR DISIMPAN: {last['pair']} ({last['time']})", expanded=False):
+            st.markdown(last["result"], unsafe_allow_html=True)
+
     col1, col2 = st.columns(2)
     with col1: market = st.radio("Market:", ["Emas", "Crypto", "Forex"], label_visibility="collapsed")
     with col2:
@@ -243,7 +254,7 @@ with tab1:
         elif not pair: st.warning("⚠️ Pilih pair terlebih dahulu!")
         else:
             try:
-                with st.spinner(f"📊 Menarik data Sesi Pasar & Harga Real-Time {pair}..."):
+                with st.spinner(f"📊 Menarik data Sesi, News & Harga Real-Time {pair}..."):
                     live_p = get_spot_price_mt5(pair)
                     closes, highs, lows = fetch_klines(pair, timeframe=tf)
                     
@@ -253,7 +264,7 @@ with tab1:
                         tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: {calc_ema(closes, 20):.4f}\n- EMA 50: {calc_ema(closes, 50):.4f}\n- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Risk Manager.
+                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Fundamental News Analyst.
                     Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
                     
                     KONDISI WAKTU & SESI PASAR REAL-TIME:
@@ -264,19 +275,35 @@ with tab1:
                     DATA PASAR & STRUKTUR HARGA:
                     {tech_data}
 
-                    ATURAN ANALISIS INSTITUSIONAL KETAT (SESSION-BASED SMC):
-                    1. SESI PASAR & MANIPULASI (Asian High/Low Sweep): Evaluasi apakah harga sedang menyapu likuiditas Sesi Asia atau Judas Swing Sesi London/NY.
-                    2. JARAK STOP LOSS (SL) RAPAT/KETAT: Tempatkan SL persis di belakang FVG / Order Block terdekat (15-30 pips). DILARANG MEMBUAT SL JAUH!
-                    3. REWARD MUTLAK MINIMAL 1:2: TP1 minimal 2x jarak SL.
+                    ATURAN INTEGRASI DETEKSI NEWS BERKALA & WAKTU (AUTOMATIC NEWS ALERT):
+                    1. JIKA ANALISIS DILAKUKAN 1-2 JAM SEBELUM BERITA HIGH-IMPACT (Contoh: Jam 18.00 WIB jika ada rilis News jam 19.30 WIB):
+                       - Wajib tampilkan "⚠️ PERINGATAN NEWS HIGH-IMPACT: [Nama News, misal CPI/NFP/FOMC] jam [Jam Rilis]. Harap berhati-hati sebelum menaruh pending order."
+                    2. JIKA ANALISIS DILAKUKAN MENDEKATI JAM RILIS (1 Jam Sebelum s.d. Jam Rilis News, contoh: Jam 18.30 - 19.30 WIB):
+                       - Wajib berikan "📊 ANALISIS DAMPAK FUNDAMENTAL NEWS HARI INI": Jelaskan prediksi bias arah pasar (BUY atau SELL) beserta alasan sentimen dampaknya terhadap {pair}.
+
+                    ATURAN ANTI-CANDLE PALSU / ANTI-FAKEOUT (SMC KETAT):
+                    1. CHoCH & BOS HANYA VALID jika CANDLE BODY CLOSE di luar level kunci (Wick sweep = Trap/Candle Palsu).
+                    2. JARAK STOP LOSS (SL) RAPAT: 15-30 pips di belakang FVG/OB terdekat.
+                    3. REWARD MINIMAL 1:2 (TP1 minimal 2x jarak SL).
 
                     TAMPILKAN ANALISIS PARAGRAF TERLEBIH DAHULU:
-                    1. **Analisis Sesi & Likuiditas:** Dampak Sesi {active_sessions} & Killzone saat ini.
-                    2. **Analisis SMC (CHoCH, BOS, FVG, OB):** Penjelasan struktur candle H1/H4 terbaru.
+                    1. **Analisis News & Sesi:** Status Peringatan News Waktu WIB / Analisis Fundamental Dampak News (BUY/SELL) + Dampak Sesi {active_sessions}.
+                    2. **Analisis Anti-Fakeout & SMC (CHoCH, BOS, FVG, OB):** Penjelasan struktur candle terbaru & Body Close validation.
 
                     SETELAH PARAGRAF ANALISIS, TAMPILKAN KOTAK PARAMETER EKSEKUSI MENGGUNAKAN FORMAT HTML KETAT BERIKUT:
                     {CARD_LAYOUT_INSTRUCTION}
                     """
                     result = call_gemini_api(api_key, prompt)
+                    
+                    # SIMPAN HASIL KE MEMORI SESSION STATE
+                    st.session_state["last_signal"] = {
+                        "pair": pair,
+                        "time": wib_time,
+                        "price_ref": price_ref,
+                        "result": result
+                    }
+                    st.session_state["signal_history"].insert(0, st.session_state["last_signal"])
+
                     st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
                     st.markdown(result, unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
@@ -291,7 +318,7 @@ with tab2:
                 gold_p = get_spot_price_mt5("XAUUSD")
                 btc_p = get_spot_price_mt5("BTCUSDT")
                 prompt = f"""
-                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions} - {current_killzone}), SMC (CHoCH, BOS, FVG) & RR Minimal 1:2:
+                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions}), Deteksi Waktu News Hari Ini, Anti-Fakeout SMC (CHoCH, BOS, FVG) & RR Minimal 1:2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
@@ -315,7 +342,7 @@ with tab3:
             try:
                 prompt = f"""
                 Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
-                Identifikasi: CHoCH, BOS, FVG, Order Block, dan Liquidity Sweep Sesi Asia/London.
+                Evaluasi potensi News jam rilis terdekat, CHoCH, BOS, FVG, Order Block, serta bedakan penembusan asli (Body Close) vs Candle Palsu (Wick Sweep).
                 
                 Tuliskan analisis penjelasan teknikal terlebih dahulu, kemudian tampilkan parameter Entry/SL/TP menggunakan format HTML Card berikut:
                 {CARD_LAYOUT_INSTRUCTION}
@@ -326,30 +353,14 @@ with tab3:
                 st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e: st.error(f"Error: {e}")
 
-# TAB 4: KALENDER & ANALISA NEWS
+# TAB 4: RIWAYAT SIGNAL TERSIMPAN
 with tab4:
-    st.subheader("📰 Fundamental News & Impact Analyst")
-    st.caption("Prediksi dampak berita ekonomi besar terhadap market.")
+    st.subheader("📜 Riwayat Signal Sesi Ini")
+    st.caption("Daftar sinyal yang sudah pernah Anda buat sebelumnya agar tidak terhapus saat keluar ke MT5.")
     
-    news_input = st.text_area("Tulis/Tempel berita ekonomi yang ingin dianalisis:", height=100)
-    
-    if st.button("Analisis Dampak Berita Ke Market", key="btn_news"):
-        if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
-        else:
-            try:
-                with st.spinner("🤖 Menganalisis sentimen berita..."):
-                    query = news_input if news_input else "Analisis berita ekonomi utama minggu ini (NFP, CPI, FOMC) dan dampaknya terhadap Emas (XAUUSD), Dolar (USD), dan Bitcoin."
-                    prompt = f"""
-                    Analisis berita / kondisi ekonomi berikut:
-                    "{query}"
-                    
-                    BERIKAN ANALISIS:
-                    1. Sentimen (Bullish / Bearish untuk USD, XAUUSD, BTC)
-                    2. Estimasi Volatilitas (High / Medium / Low)
-                    3. Rekomendasi Jam Filter News (Kapan tidak boleh trading).
-                    """
-                    result = call_gemini_api(api_key, prompt)
-                    st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
-                    st.markdown(result, unsafe_allow_html=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
-            except Exception as e: st.error(f"Error Analisis News: {e}")
+    if not st.session_state["signal_history"]:
+        st.info("Belum ada riwayat sinyal tersimpan. Buat sinyal baru di menu '01. Buat Signal Pro'.")
+    else:
+        for idx, item in enumerate(st.session_state["signal_history"]):
+            with st.expander(f"📌 {idx+1}. {item['pair']} - {item['time']} (@ {item['price_ref']})", expanded=(idx==0)):
+                st.markdown(item["result"], unsafe_allow_html=True)
