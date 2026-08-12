@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Ultra Session SMC Analyst (Killzone + Lot Calc)",
+    page_title="AI Ultra Session SMC Analyst",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -22,7 +22,7 @@ st.markdown("""
     .card-signal { background-color: #1e222d; border: 1px solid #2a2e39; border-radius: 8px; padding: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); margin-top: 15px; }
     .price-badge-green { background-color: #1e222d; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #00e676; margin-bottom: 10px; font-size: 14px; color: #ffffff; }
     .session-badge { background-color: #1e222d; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #2962ff; margin-bottom: 15px; font-size: 13px; color: #ffffff; }
-    .stSelectbox>div>div, .stTextInput>div>div>input, .stNumberInput>div>div>input { background-color: #1e222d !important; color: #ffffff !important; border: 1px solid #363a45 !important; border-radius: 6px !important; }
+    .stSelectbox>div>div, .stTextInput>div>div>input { background-color: #1e222d !important; color: #ffffff !important; border: 1px solid #363a45 !important; border-radius: 6px !important; }
     label, .stMarkdown, h1, h2, h3 { color: #ffffff !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -171,7 +171,7 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
 
 # UI STREAMLIT
 st.title("⚡ AI Ultra Session SMC Analyst")
-st.caption("Session Killzones • Session Liquidity Sweep • Money Management Calculator")
+st.caption("Session Killzones • Session Liquidity Sweep • Clean UI")
 
 # INFORMASI SESI REAL-TIME
 wib_time, active_sessions, current_killzone = get_market_session_info()
@@ -199,13 +199,6 @@ with tab1:
     if auto_price:
         st.markdown(f"<div class='price-badge-green'>🟢 <b>Harga Real-Time Live:</b> {auto_price:,.4f}</div>", unsafe_allow_html=True)
 
-    st.subheader("💡 KALKULATOR LOT & RISIKO MANAJEMEN")
-    col_acc1, col_acc2 = st.columns(2)
-    with col_acc1:
-        acc_balance = st.number_input("Modal Akun MT5 ($):", value=100.0, step=50.0, format="%.2f")
-    with col_acc2:
-        risk_pct = st.number_input("Toleransi Risiko per Trade (%):", value=1.0, step=0.5, format="%.1f")
-
     tf = st.select_slider("Timeframe Analisis Utama:", options=["M5", "M15", "M30", "H1", "H4", "D1"], value="M15")
     gaya = st.radio("Gaya Trading:", ["Scalping (Presisi M5/M15)", "Day Trade (Multi-Timeframe M15/H1)", "Swing (Struktur H4/D1)"], horizontal=True)
 
@@ -224,7 +217,7 @@ with tab1:
                         tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: {calc_ema(closes, 20):.4f}\n- EMA 50: {calc_ema(closes, 50):.4f}\n- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Money Manager.
+                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Risk Manager.
                     Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
                     
                     KONDISI WAKTU & SESI PASAR REAL-TIME:
@@ -234,10 +227,6 @@ with tab1:
                     
                     DATA PASAR & STRUKTUR HARGA:
                     {tech_data}
-                    
-                    INFORMASI MANAJEMEN RISIKO AKUN USER:
-                    - Modal Akun MT5: ${acc_balance:,.2f}
-                    - Risiko Maksimal per Trade: {risk_pct}% (Batas rugi maksimal = ${(acc_balance * risk_pct / 100):,.2f})
 
                     ATURAN ANALISIS INSTITUSIONAL KETAT (SESSION-BASED SMC):
                     1. SESI PASAR & MANIPULASI (Asian High/Low Sweep): Evaluasi apakah harga saat ini sedang menyapu (sweep) likuiditas Sesi Asia atau memasuki area Judas Swing Sesi London/NY.
@@ -246,7 +235,7 @@ with tab1:
                        - TP1 = Minimal 2x Jarak SL.
                        - TP2 = Minimal 3x Jarak SL.
                        - TP3 = Minimal 4x Jarak SL.
-                    4. REKOMENDASI UKURAN LOT MT5 REKOMENDASI: Hitung secara presisi berapa Lot yang harus dibuka di MT5 berdasarkan batas rugi ${(acc_balance * risk_pct / 100):,.2f} dan jarak SL pips tersebut.
+                    4. SARAN UKURAN LOT MT5: Berikan saran Lot aman standar (misal untuk modal $100 dengan risiko 1%).
 
                     FORMAT OUTPUT RESPON:
                     - PAIR & HARGA SPOT: {pair} @ {price_ref}
@@ -258,7 +247,7 @@ with tab1:
                     - TAKE PROFIT 1 (RR 1:2): [Harga TP1 Minimal 2x Jarak SL]
                     - TAKE PROFIT 2 (RR 1:3): [Harga TP2]
                     - TAKE PROFIT 3 (RR 1:4): [Harga TP3]
-                    - 🧮 REKOMENDASI LOT MT5: [Hitungan Lot Presisi, contoh: 0.02 Lot untuk risiko ${acc_balance * risk_pct / 100:.2f}]
+                    - 💡 SARAN LOT MT5: [Saran ukuran lot aman]
                     - 🛡️ ATURAN PENGAMANAN PROFIT: [Harga pemicu geser SL ke Breakeven / BE & Partial Close]
                     - ALASAN TEKNIKAL LENGKAP: [Kenapa BUY / Kenapa SELL]
                     """
@@ -281,7 +270,7 @@ with tab2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
-                WAJIB: SL Ketat, TP1 Minimal 2x Jarak SL (RR 1:2), Rekomendasi Lot untuk Modal $100 (Risk 1%), dan Aturan Breakeven (BE).
+                WAJIB: SL Ketat, TP1 Minimal 2x Jarak SL (RR 1:2), Saran Lot Aman, dan Aturan Breakeven (BE).
                 """
                 result = call_gemini_api(api_key, prompt)
                 st.markdown(result)
@@ -301,7 +290,7 @@ with tab3:
                 prompt = f"""
                 Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
                 Identifikasi: CHoCH, BOS, FVG, Order Block, dan Liquidity Sweep Sesi Asia/London.
-                Tentukan: Entry Zone, SL Ketat, TP1 (Wajib RR Minimal 1:2), TP2, TP3, Rekomendasi Lot (Modal $100, Risk 1%), dan Aturan Breakeven.
+                Tentukan: Entry Zone, SL Ketat, TP1 (Wajib RR Minimal 1:2), TP2, TP3, Saran Lot Aman, dan Aturan Breakeven.
                 """
                 result = call_gemini_api(api_key, prompt, uploaded_file.getvalue(), uploaded_file.type)
                 st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
