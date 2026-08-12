@@ -177,7 +177,7 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
 
 # UI STREAMLIT
 st.title("⚡ AI Ultra Session SMC Analyst")
-st.caption("Anti-Fakeout SMC • Auto News Warning • Pro Dashboard UI")
+st.caption("Anti-Fakeout SMC • Auto News Warning • Visual Cards Layout")
 
 # INFORMASI SESI REAL-TIME
 wib_time, active_sessions, current_killzone = get_market_session_info()
@@ -191,13 +191,37 @@ st.markdown(f"""
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. 📜 Riwayat Signal"])
 
-# PROMPT FORMAT LAYOUT PRO DASHBOARD (CARD STYLED)
-CARD_LAYOUT_INSTRUCTION = """
-Gunakan format HTML Card berikut untuk menyajikan bagian Parameter Eksekusi agar tampilannya sangat kontras, rapi, dan mudah dibaca (DILARANG MENGGUNAKAN TEKS BULLET BIASA UNTUK KOTAK EKSEKUSI):
+# INSTRUKSI LAYOUT HASIL ANALISIS (KARTU PENJELASAN + KARTU ENTRY ASLI)
+COMBINED_LAYOUT_INSTRUCTION = """
+LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT (DILARANG MENGGUNAKAN PARAGRAF POLOS TEBAL PADA BAGIAN PENJELASAN):
 
-<div style="background-color: #1a1e29; border: 1px solid #2e3548; border-radius: 10px; padding: 18px; margin-top: 15px; margin-bottom: 15px;">
+<!-- BAGIAN 1: KARTU VISUAL PENJELASAN ANALISIS (NEWS & SMC) -->
+<div style="background-color: #1a1e29; border: 1px solid #2e3548; border-radius: 10px; padding: 16px; margin-bottom: 15px;">
+  
+  <div style="background-color: #12151e; border-left: 4px solid #ff9800; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+    <div style="color: #ff9800; font-weight: bold; font-size: 14px; margin-bottom: 6px;">📊 ANALISIS NEWS & SENTIMEN FUNDAMENTAL</div>
+    <div style="color: #d1d4dc; font-size: 13px; line-height: 1.6;">
+      • <b>Status / Peringatan News:</b> [Detail Jam WIB News & Peringatan]<br>
+      • <b>Proyeksi Bias Sentimen:</b> [BUY (Bullish) / SELL (Bearish) / Neutral]<br>
+      • <b>Penjelasan Ringkas:</b> [Alasan sentimen pasar secara singkat dan jelas]
+    </div>
+  </div>
+
+  <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px;">
+    <div style="color: #00e676; font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ ANALISIS ANTI-FAKEOUT & STRUKTUR SMC</div>
+    <div style="color: #d1d4dc; font-size: 13px; line-height: 1.6;">
+      • <b>Tren Utama Market:</b> [Bullish / Bearish / Ranging]<br>
+      • <b>Validasi Body Close (Anti-Fakeout):</b> [Penjelasan Body Close vs Wick Sweep Trap]<br>
+      • <b>Area FVG & Order Block:</b> [Level FVG & OB aktif terdekat]
+    </div>
+  </div>
+
+</div>
+
+<!-- BAGIAN 2: KARTU VISUAL ENTRY / EKSEKUSI (KARTU ASLI YANG SUDAH BAGUS) -->
+<div style="background-color: #1a1e29; border: 1px solid #2e3548; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
   <div style="background-color: #2962ff; color: #ffffff; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 16px; margin-bottom: 12px; display: inline-block;">
-    🎯 REKOMENDASI: [ISI BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
+    🎯 REKOMENDASI: [BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
   </div>
   
   <div style="background-color: #12151e; border-left: 4px solid #2962ff; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
@@ -264,7 +288,7 @@ with tab1:
                         tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: {calc_ema(closes, 20):.4f}\n- EMA 50: {calc_ema(closes, 50):.4f}\n- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Fundamental News Analyst.
+                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Fundamental Analyst.
                     Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
                     
                     KONDISI WAKTU & SESI PASAR REAL-TIME:
@@ -275,23 +299,17 @@ with tab1:
                     DATA PASAR & STRUKTUR HARGA:
                     {tech_data}
 
-                    ATURAN INTEGRASI DETEKSI NEWS BERKALA & WAKTU (AUTOMATIC NEWS ALERT):
-                    1. JIKA ANALISIS DILAKUKAN 1-2 JAM SEBELUM BERITA HIGH-IMPACT (Contoh: Jam 18.00 WIB jika ada rilis News jam 19.30 WIB):
-                       - Wajib tampilkan "⚠️ PERINGATAN NEWS HIGH-IMPACT: [Nama News, misal CPI/NFP/FOMC] jam [Jam Rilis]. Harap berhati-hati sebelum menaruh pending order."
-                    2. JIKA ANALISIS DILAKUKAN MENDEKATI JAM RILIS (1 Jam Sebelum s.d. Jam Rilis News, contoh: Jam 18.30 - 19.30 WIB):
-                       - Wajib berikan "📊 ANALISIS DAMPAK FUNDAMENTAL NEWS HARI INI": Jelaskan prediksi bias arah pasar (BUY atau SELL) beserta alasan sentimen dampaknya terhadap {pair}.
+                    ATURAN INTEGRASI NEWS BERKALA:
+                    1. JIKA ANALISIS DILAKUKAN 1-2 JAM SEBELUM NEWS (misal jam 18.00 WIB): Berikan Peringatan News High Impact jam Rilis.
+                    2. JIKA ANALISIS DILAKUKAN MENDEKATI JAM RILIS (1 Jam Sebelum s.d. Jam Rilis News, contoh jam 18.30-19.30 WIB): Tuliskan prediksi bias (BUY/SELL) beserta alasan dampaknya.
 
                     ATURAN ANTI-CANDLE PALSU / ANTI-FAKEOUT (SMC KETAT):
                     1. CHoCH & BOS HANYA VALID jika CANDLE BODY CLOSE di luar level kunci (Wick sweep = Trap/Candle Palsu).
                     2. JARAK STOP LOSS (SL) RAPAT: 15-30 pips di belakang FVG/OB terdekat.
                     3. REWARD MINIMAL 1:2 (TP1 minimal 2x jarak SL).
 
-                    TAMPILKAN ANALISIS PARAGRAF TERLEBIH DAHULU:
-                    1. **Analisis News & Sesi:** Status Peringatan News Waktu WIB / Analisis Fundamental Dampak News (BUY/SELL) + Dampak Sesi {active_sessions}.
-                    2. **Analisis Anti-Fakeout & SMC (CHoCH, BOS, FVG, OB):** Penjelasan struktur candle terbaru & Body Close validation.
-
-                    SETELAH PARAGRAF ANALISIS, TAMPILKAN KOTAK PARAMETER EKSEKUSI MENGGUNAKAN FORMAT HTML KETAT BERIKUT:
-                    {CARD_LAYOUT_INSTRUCTION}
+                    FORMAT JAWABAN WAJIB MENGGUNAKAN LAYOUT DUA KARTU VISUAL BERIKUT:
+                    {COMBINED_LAYOUT_INSTRUCTION}
                     """
                     result = call_gemini_api(api_key, prompt)
                     
@@ -322,8 +340,8 @@ with tab2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
-                Gunakan format HTML Card berikut untuk masing-masing signal agar tampilannya seperti Trading Dashboard:
-                {CARD_LAYOUT_INSTRUCTION}
+                Gunakan format Kartu Visual lengkap berikut untuk masing-masing signal:
+                {COMBINED_LAYOUT_INSTRUCTION}
                 """
                 result = call_gemini_api(api_key, prompt)
                 st.markdown(result, unsafe_allow_html=True)
@@ -342,10 +360,10 @@ with tab3:
             try:
                 prompt = f"""
                 Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
-                Evaluasi potensi News jam rilis terdekat, CHoCH, BOS, FVG, Order Block, serta bedakan penembusan asli (Body Close) vs Candle Palsu (Wick Sweep).
+                Evaluasi potensi News, CHoCH, BOS, FVG, Order Block, serta bedakan penembusan asli (Body Close) vs Candle Palsu (Wick Sweep).
                 
-                Tuliskan analisis penjelasan teknikal terlebih dahulu, kemudian tampilkan parameter Entry/SL/TP menggunakan format HTML Card berikut:
-                {CARD_LAYOUT_INSTRUCTION}
+                Susun hasil analisis menggunakan format Kartu Visual lengkap berikut:
+                {COMBINED_LAYOUT_INSTRUCTION}
                 """
                 result = call_gemini_api(api_key, prompt, uploaded_file.getvalue(), uploaded_file.type)
                 st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
