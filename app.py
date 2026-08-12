@@ -1,10 +1,11 @@
 import streamlit as st
 import requests
 import base64
+from datetime import datetime, timezone, timedelta
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Ultra Pro Analyst (SMC & Strict 1:2 RR)",
+    page_title="AI Ultra Session SMC Analyst (Killzone + Lot Calc)",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -19,9 +20,9 @@ st.markdown("""
     .stButton>button { background: linear-gradient(90deg, #2962ff 0%, #1e53e5 100%); color: #ffffff; border-radius: 6px; border: none; font-weight: bold; padding: 12px; box-shadow: 0 4px 12px rgba(41,98,255,0.3); }
     .stButton>button:hover { background: #1e53e5; transform: translateY(-1px); }
     .card-signal { background-color: #1e222d; border: 1px solid #2a2e39; border-radius: 8px; padding: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); margin-top: 15px; }
-    .price-badge-green { background-color: #1e222d; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #00e676; margin-bottom: 15px; font-size: 14px; color: #ffffff; }
-    .price-badge-red { background-color: #1e222d; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #ff4444; margin-bottom: 15px; font-size: 14px; color: #ffffff; }
-    .stSelectbox>div>div, .stTextInput>div>div>input { background-color: #1e222d !important; color: #ffffff !important; border: 1px solid #363a45 !important; border-radius: 6px !important; }
+    .price-badge-green { background-color: #1e222d; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #00e676; margin-bottom: 10px; font-size: 14px; color: #ffffff; }
+    .session-badge { background-color: #1e222d; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #2962ff; margin-bottom: 15px; font-size: 13px; color: #ffffff; }
+    .stSelectbox>div>div, .stTextInput>div>div>input, .stNumberInput>div>div>input { background-color: #1e222d !important; color: #ffffff !important; border: 1px solid #363a45 !important; border-radius: 6px !important; }
     label, .stMarkdown, h1, h2, h3 { color: #ffffff !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -32,6 +33,31 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     api_key = st.sidebar.text_input("Masukkan Gemini API Key (Gratis):", type="password")
     st.sidebar.caption("Dapatkan API Key di: [Google AI Studio](https://aistudio.google.com/)")
+
+# FUNGSI DETEKSI SESI PASAR & KILLZONE REAL-TIME (WIB)
+def get_market_session_info():
+    now_utc = datetime.now(timezone.utc)
+    now_wib = now_utc + timedelta(hours=7)
+    time_str = now_wib.strftime("%H:%M WIB")
+    hour = now_wib.hour
+    
+    sessions = []
+    if 7 <= hour < 16:
+        sessions.append("🌏 Sesi Asia (Tokyo)")
+    if 14 <= hour < 23:
+        sessions.append("🇬🇧 Sesi London (Eropa)")
+    if 19 <= hour or hour < 4:
+        sessions.append("🇺🇸 Sesi New York (AS)")
+        
+    killzone = "💤 Sesi Konsolidasi / Biasa"
+    if 14 <= hour <= 17:
+        killzone = "⚡ LONDON OPEN KILLZONE (Volatilitas Tinggi)"
+    elif 19 <= hour <= 23:
+        killzone = "🔥 NEW YORK & OVERLAP KILLZONE (PUNCAK VOLATILITAS TEKSTUR SMC)"
+    elif 7 <= hour <= 10:
+        killzone = "🌏 ASIA OPEN KILLZONE (Pembentukan Range)"
+        
+    return time_str, ", ".join(sessions) if sessions else "Pasar Tutup / Transisi", killzone
 
 # PENGAMBILAN HARGA SPOT REAL-TIME DARI PROVIDER BEBAS BLOKIR
 def get_spot_price_mt5(pair_str):
@@ -51,19 +77,13 @@ def get_spot_price_mt5(pair_str):
         "ETHUSDT": "ETH", "ETH": "ETH",
         "SOLUSDT": "SOL", "SOL": "SOL",
         "XRPUSDT": "XRP", "XRP": "XRP",
-        "BNBUSDT": "BNB", "BNB": "BNB",
-        "DOGEUSDT": "DOGE", "DOGE": "DOGE"
+        "BNBUSDT": "BNB", "BNB": "BNB"
     }
     coin_code = crypto_symbols.get(p, p.replace("USDT", "") if "USDT" in p else None)
     if coin_code:
         try:
             r = requests.get(f"https://api.coinbase.com/v2/prices/{coin_code}-USD/spot", timeout=3)
             if r.status_code == 200: return float(r.json()["data"]["amount"])
-        except Exception: pass
-        try:
-            coin_map = {"BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "XRP": "xrp", "BNB": "binance-coin"}
-            r = requests.get(f"https://api.coincap.io/v2/assets/{coin_map.get(coin_code, coin_code.lower())}", timeout=3)
-            if r.status_code == 200: return float(r.json()["data"]["priceUsd"])
         except Exception: pass
 
     # C. FOREX SPOT (Frankfurter API)
@@ -150,8 +170,18 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
     raise Exception(f"Gagal memanggil AI: {last_err}")
 
 # UI STREAMLIT
-st.title("⚡ AI Ultra Pro Analyst (SMC & 1:2 RR)")
-st.caption("Smart Money Concepts • Multi-Timeframe Structure • Strict Risk/Reward 1:2+")
+st.title("⚡ AI Ultra Session SMC Analyst")
+st.caption("Session Killzones • Session Liquidity Sweep • Money Management Calculator")
+
+# INFORMASI SESI REAL-TIME
+wib_time, active_sessions, current_killzone = get_market_session_info()
+st.markdown(f"""
+<div class='session-badge'>
+🕒 <b>Waktu Saat Ini:</b> {wib_time}<br>
+🏛️ <b>Sesi Aktif:</b> {active_sessions}<br>
+🎯 <b>Status Killzone:</b> <b>{current_killzone}</b>
+</div>
+""", unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. Kalender & News AI"])
 
@@ -168,57 +198,68 @@ with tab1:
     auto_price = get_spot_price_mt5(pair) if pair else None
     if auto_price:
         st.markdown(f"<div class='price-badge-green'>🟢 <b>Harga Real-Time Live:</b> {auto_price:,.4f}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<div class='price-badge-red'>⚠️ <b>Sistem Siap:</b> Menghubungkan ke API Pasar...</div>", unsafe_allow_html=True)
+
+    st.subheader("💡 KALKULATOR LOT & RISIKO MANAJEMEN")
+    col_acc1, col_acc2 = st.columns(2)
+    with col_acc1:
+        acc_balance = st.number_input("Modal Akun MT5 ($):", value=100.0, step=50.0, format="%.2f")
+    with col_acc2:
+        risk_pct = st.number_input("Toleransi Risiko per Trade (%):", value=1.0, step=0.5, format="%.1f")
 
     tf = st.select_slider("Timeframe Analisis Utama:", options=["M5", "M15", "M30", "H1", "H4", "D1"], value="M15")
-    gaya = st.radio("Gaya Trading:", ["Scalping (Ketats M5/M15)", "Day Trade (Multi-Timeframe M15/H1)", "Swing (Struktur H4/D1)"], horizontal=True)
+    gaya = st.radio("Gaya Trading:", ["Scalping (Presisi M5/M15)", "Day Trade (Multi-Timeframe M15/H1)", "Swing (Struktur H4/D1)"], horizontal=True)
 
     if st.button("Buat Signal Ultra Pro (Auto)", key="btn_signal"):
         if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
         elif not pair: st.warning("⚠️ Pilih pair terlebih dahulu!")
         else:
             try:
-                with st.spinner(f"📊 Menarik data SMC & harga real-time {pair}..."):
+                with st.spinner(f"📊 Menarik data Sesi Pasar & Harga Real-Time {pair}..."):
                     live_p = get_spot_price_mt5(pair)
                     closes, highs, lows = fetch_klines(pair, timeframe=tf)
                     
                     price_ref = f"{live_p:,.4f}" if live_p else (f"{closes[-1]:,.4f}" if closes else "Harga Pasar Terkini")
-                    tech_data = f"Harga Spot Real-Time Detik Ini: {price_ref}\n"
+                    tech_data = f"Harga Spot Real-Time: {price_ref}\n"
                     if closes and len(closes) >= 50:
                         tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: {calc_ema(closes, 20):.4f}\n- EMA 50: {calc_ema(closes, 50):.4f}\n- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Institutional Smart Money Concepts (SMC) Trader & Risk Manager Ketat.
+                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Money Manager.
                     Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
                     
-                    DATA PASAR REAL-TIME DETIK INI:
+                    KONDISI WAKTU & SESI PASAR REAL-TIME:
+                    - Waktu WIB: {wib_time}
+                    - Sesi Aktif: {active_sessions}
+                    - Status Killzone: {current_killzone}
+                    
+                    DATA PASAR & STRUKTUR HARGA:
                     {tech_data}
                     
-                    ATURAN RISK MANAGEMENT KETAT (WAJIB DIPATUHI):
-                    1. PATOKAN HARGA SEKARANG ADALAH {price_ref}.
-                    2. JARAK STOP LOSS (SL) HARUS KETAT DAN RAPAT! Letakkan SL tepat di belakang FVG / Order Block terdekat (misal 15-30 pips). DILARANG KERAS MEMBUAT SL YANG TERLALU JAUH!
-                    3. RASIO RISK-TO-REWARD (RR) WAJIB MINIMAL 1:2!
-                       - TP1 WAJIB Minimal 2x Jarak SL (Contoh: Jika SL = 30 pips, maka TP1 minimal 60 pips dari Entry).
+                    INFORMASI MANAJEMEN RISIKO AKUN USER:
+                    - Modal Akun MT5: ${acc_balance:,.2f}
+                    - Risiko Maksimal per Trade: {risk_pct}% (Batas rugi maksimal = ${(acc_balance * risk_pct / 100):,.2f})
+
+                    ATURAN ANALISIS INSTITUSIONAL KETAT (SESSION-BASED SMC):
+                    1. SESI PASAR & MANIPULASI (Asian High/Low Sweep): Evaluasi apakah harga saat ini sedang menyapu (sweep) likuiditas Sesi Asia atau memasuki area Judas Swing Sesi London/NY.
+                    2. JARAK STOP LOSS (SL) RAPAT/KETAT: Tempatkan SL persis di belakang FVG / Order Block terdekat (15-30 pips). DILARANG MEMBUAT SL JAUH!
+                    3. REWARD MUTLAK MINIMAL 1:2:
+                       - TP1 = Minimal 2x Jarak SL.
                        - TP2 = Minimal 3x Jarak SL.
                        - TP3 = Minimal 4x Jarak SL.
-                    
-                    ANALISIS SMART MONEY CONCEPTS (SMC) BERDASARKAN CANDLE TERBARU (1H, 4H, 1D):
-                    - CHoCH (Change of Character): Evaluasi apakah ada perubahan karakter arah tren candle 1-4 jam terakhir.
-                    - BOS (Break of Structure): Identifikasi area penembusan struktur candle terbaru.
-                    - FVG / GAP (Fair Value Gap): Tentukan area ketidakseimbangan harga sebagai titik Entry Zone (Limit).
-                    - Order Block (OB): Tentukan area jejak institusi terdekat.
+                    4. REKOMENDASI UKURAN LOT MT5 REKOMENDASI: Hitung secara presisi berapa Lot yang harus dibuka di MT5 berdasarkan batas rugi ${(acc_balance * risk_pct / 100):,.2f} dan jarak SL pips tersebut.
 
-                    FORMAT OUTPUT:
+                    FORMAT OUTPUT RESPON:
                     - PAIR & HARGA SPOT: {pair} @ {price_ref}
                     - REKOMENDASI: [BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
-                    - ANALISIS SMC (CHoCH, BOS, FVG, OB): [Penjelasan ringkas candle 1-4 jam terakhir]
-                    - ENTRY ZONE: [Harga Entry Presisi di FVG/OB]
+                    - ANALISIS SESI & LIKUIDITAS: [Penjelasan dampak Sesi {active_sessions} & Killzone saat ini]
+                    - ANALISIS SMC (CHoCH, BOS, FVG, OB): [Penjelasan struktur candle H1/H4 terbaru]
+                    - ENTRY ZONE: [Harga Entry Presisi]
                     - STOP LOSS (SL KETAT): [Harga SL Rapat]
                     - TAKE PROFIT 1 (RR 1:2): [Harga TP1 Minimal 2x Jarak SL]
                     - TAKE PROFIT 2 (RR 1:3): [Harga TP2]
                     - TAKE PROFIT 3 (RR 1:4): [Harga TP3]
-                    - ATURAN PENGAMANAN PROFIT: [Harga pemicu geser SL ke Breakeven / BE & Partial Close]
+                    - 🧮 REKOMENDASI LOT MT5: [Hitungan Lot Presisi, contoh: 0.02 Lot untuk risiko ${acc_balance * risk_pct / 100:.2f}]
+                    - 🛡️ ATURAN PENGAMANAN PROFIT: [Harga pemicu geser SL ke Breakeven / BE & Partial Close]
                     - ALASAN TEKNIKAL LENGKAP: [Kenapa BUY / Kenapa SELL]
                     """
                     result = call_gemini_api(api_key, prompt)
@@ -229,18 +270,18 @@ with tab1:
 
 # TAB 2: SIGNAL HARI INI
 with tab2:
-    if st.button("Tampilkan Signal Harian", key="btn_daily"):
+    if st.button("Tampilkan Signal Harian Sesi Ini", key="btn_daily"):
         if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
         else:
             try:
                 gold_p = get_spot_price_mt5("XAUUSD")
                 btc_p = get_spot_price_mt5("BTCUSDT")
                 prompt = f"""
-                Berikan 2 signal harian terbaik hari ini berdasarkan SMC (CHoCH, BOS, FVG) & RR Minimal 1:2:
+                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions} - {current_killzone}), SMC (CHoCH, BOS, FVG) & RR Minimal 1:2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
-                WAJIB: SL Ketat, TP1 Minimal 2x Jarak SL (RR 1:2), serta Aturan Pemicu Breakeven (BE).
+                WAJIB: SL Ketat, TP1 Minimal 2x Jarak SL (RR 1:2), Rekomendasi Lot untuk Modal $100 (Risk 1%), dan Aturan Breakeven (BE).
                 """
                 result = call_gemini_api(api_key, prompt)
                 st.markdown(result)
@@ -253,14 +294,14 @@ with tab3:
     chart_pair = st.text_input("Pair Chart:", "XAUUSD")
     chart_tf = st.selectbox("Timeframe Chart:", ["M5", "M15", "M30", "H1", "H4", "D1"], index=1)
 
-    if st.button("Analisa Chart Vision", key="btn_chart"):
+    if st.button("Analisa Chart Vision Sesi Ini", key="btn_chart"):
         if not api_key or not uploaded_file: st.error("⚠️ API Key belum dikonfigurasi atau gambar belum diunggah!")
         else:
             try:
                 prompt = f"""
-                Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya SMC Analyst.
-                Identifikasi: CHoCH, BOS, FVG, dan Order Block pada gambar.
-                Tentukan: Entry Zone, SL Ketat, TP1 (Wajib RR Minimal 1:2), TP2, TP3, dan Aturan Breakeven.
+                Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
+                Identifikasi: CHoCH, BOS, FVG, Order Block, dan Liquidity Sweep Sesi Asia/London.
+                Tentukan: Entry Zone, SL Ketat, TP1 (Wajib RR Minimal 1:2), TP2, TP3, Rekomendasi Lot (Modal $100, Risk 1%), dan Aturan Breakeven.
                 """
                 result = call_gemini_api(api_key, prompt, uploaded_file.getvalue(), uploaded_file.type)
                 st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
