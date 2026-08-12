@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS TradingView / Pro Dark Theme
+# Custom CSS TradingView Pro / Dashboard Theme
 st.markdown("""
     <style>
     .stApp { background-color: #131722; color: #d1d4dc; font-family: 'Trebuchet MS', sans-serif; }
@@ -171,7 +171,7 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
 
 # UI STREAMLIT
 st.title("⚡ AI Ultra Session SMC Analyst")
-st.caption("Session Killzones • Session Liquidity Sweep • Clean UI")
+st.caption("Session Killzones • Session Liquidity Sweep • Pro Dashboard UI")
 
 # INFORMASI SESI REAL-TIME
 wib_time, active_sessions, current_killzone = get_market_session_info()
@@ -184,6 +184,42 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. Kalender & News AI"])
+
+# PROMPT FORMAT LAYOUT PRO DASHBOARD (CARD STYLED)
+CARD_LAYOUT_INSTRUCTION = """
+Gunakan format HTML Card berikut untuk menyajikan bagian Parameter Eksekusi agar tampilannya sangat kontras, rapi, dan mudah dibaca (DILARANG MENGGUNAKAN TEKS BULLET BIASA UNTUK KOTAK EKSEKUSI):
+
+<div style="background-color: #1a1e29; border: 1px solid #2e3548; border-radius: 10px; padding: 18px; margin-top: 15px; margin-bottom: 15px;">
+  <div style="background-color: #2962ff; color: #ffffff; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 16px; margin-bottom: 12px; display: inline-block;">
+    🎯 REKOMENDASI: [ISI BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
+  </div>
+  
+  <div style="background-color: #12151e; border-left: 4px solid #2962ff; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🎯 ENTRY ZONE (DISCOUNT / FVG)</div>
+    <div style="color: #2962ff; font-size: 18px; font-weight: bold;">[Harga Entry Presisi]</div>
+    <div style="color: #a0a5b5; font-size: 12px;">[Catatan Ringkas Skenario Entry]</div>
+  </div>
+
+  <div style="background-color: #12151e; border-left: 4px solid #ff4444; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🛑 STOP LOSS (SL KETAT)</div>
+    <div style="color: #ff4444; font-size: 18px; font-weight: bold;">[Harga SL Rapat]</div>
+    <div style="color: #a0a5b5; font-size: 12px;">[Jarak Pips SL dari Entry]</div>
+  </div>
+
+  <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🏆 TARGET PROFIT (RR MINIMAL 1:2+)</div>
+    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 1 (RR 1:2): <span style="font-size: 16px;">[Harga TP1]</span></div>
+    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 2 (RR 1:3): <span style="font-size: 16px;">[Harga TP2]</span></div>
+    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 3 (RR 1:4): <span style="font-size: 16px;">[Harga TP3]</span></div>
+  </div>
+
+  <div style="background-color: #12151e; border-left: 4px solid #ffd600; padding: 12px; border-radius: 6px;">
+    <div style="color: #ffd600; font-size: 13px; font-weight: bold;">💡 SARAN LOT & PENGAMANAN PROFIT</div>
+    <div style="color: #d1d4dc; font-size: 13px;"><b>Ukuran Lot Aman:</b> [Saran Lot, misal 0.01 Micro Lot]</div>
+    <div style="color: #d1d4dc; font-size: 13px;"><b>Rule Breakeven (BE):</b> [Harga pemicu geser SL ke Entry]</div>
+  </div>
+</div>
+"""
 
 # TAB 1: BUAT SIGNAL PRO
 with tab1:
@@ -229,31 +265,20 @@ with tab1:
                     {tech_data}
 
                     ATURAN ANALISIS INSTITUSIONAL KETAT (SESSION-BASED SMC):
-                    1. SESI PASAR & MANIPULASI (Asian High/Low Sweep): Evaluasi apakah harga saat ini sedang menyapu (sweep) likuiditas Sesi Asia atau memasuki area Judas Swing Sesi London/NY.
+                    1. SESI PASAR & MANIPULASI (Asian High/Low Sweep): Evaluasi apakah harga sedang menyapu likuiditas Sesi Asia atau Judas Swing Sesi London/NY.
                     2. JARAK STOP LOSS (SL) RAPAT/KETAT: Tempatkan SL persis di belakang FVG / Order Block terdekat (15-30 pips). DILARANG MEMBUAT SL JAUH!
-                    3. REWARD MUTLAK MINIMAL 1:2:
-                       - TP1 = Minimal 2x Jarak SL.
-                       - TP2 = Minimal 3x Jarak SL.
-                       - TP3 = Minimal 4x Jarak SL.
-                    4. SARAN UKURAN LOT MT5: Berikan saran Lot aman standar (misal untuk modal $100 dengan risiko 1%).
+                    3. REWARD MUTLAK MINIMAL 1:2: TP1 minimal 2x jarak SL.
 
-                    FORMAT OUTPUT RESPON:
-                    - PAIR & HARGA SPOT: {pair} @ {price_ref}
-                    - REKOMENDASI: [BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
-                    - ANALISIS SESI & LIKUIDITAS: [Penjelasan dampak Sesi {active_sessions} & Killzone saat ini]
-                    - ANALISIS SMC (CHoCH, BOS, FVG, OB): [Penjelasan struktur candle H1/H4 terbaru]
-                    - ENTRY ZONE: [Harga Entry Presisi]
-                    - STOP LOSS (SL KETAT): [Harga SL Rapat]
-                    - TAKE PROFIT 1 (RR 1:2): [Harga TP1 Minimal 2x Jarak SL]
-                    - TAKE PROFIT 2 (RR 1:3): [Harga TP2]
-                    - TAKE PROFIT 3 (RR 1:4): [Harga TP3]
-                    - 💡 SARAN LOT MT5: [Saran ukuran lot aman]
-                    - 🛡️ ATURAN PENGAMANAN PROFIT: [Harga pemicu geser SL ke Breakeven / BE & Partial Close]
-                    - ALASAN TEKNIKAL LENGKAP: [Kenapa BUY / Kenapa SELL]
+                    TAMPILKAN ANALISIS PARAGRAF TERLEBIH DAHULU:
+                    1. **Analisis Sesi & Likuiditas:** Dampak Sesi {active_sessions} & Killzone saat ini.
+                    2. **Analisis SMC (CHoCH, BOS, FVG, OB):** Penjelasan struktur candle H1/H4 terbaru.
+
+                    SETELAH PARAGRAF ANALISIS, TAMPILKAN KOTAK PARAMETER EKSEKUSI MENGGUNAKAN FORMAT HTML KETAT BERIKUT:
+                    {CARD_LAYOUT_INSTRUCTION}
                     """
                     result = call_gemini_api(api_key, prompt)
                     st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
-                    st.markdown(result)
+                    st.markdown(result, unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e: st.error(f"Error: {e}")
 
@@ -270,10 +295,11 @@ with tab2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
-                WAJIB: SL Ketat, TP1 Minimal 2x Jarak SL (RR 1:2), Saran Lot Aman, dan Aturan Breakeven (BE).
+                Gunakan format HTML Card berikut untuk masing-masing signal agar tampilannya seperti Trading Dashboard:
+                {CARD_LAYOUT_INSTRUCTION}
                 """
                 result = call_gemini_api(api_key, prompt)
-                st.markdown(result)
+                st.markdown(result, unsafe_allow_html=True)
             except Exception as e: st.error(f"Error: {e}")
 
 # TAB 3: ANALISA CHART
@@ -290,11 +316,13 @@ with tab3:
                 prompt = f"""
                 Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
                 Identifikasi: CHoCH, BOS, FVG, Order Block, dan Liquidity Sweep Sesi Asia/London.
-                Tentukan: Entry Zone, SL Ketat, TP1 (Wajib RR Minimal 1:2), TP2, TP3, Saran Lot Aman, dan Aturan Breakeven.
+                
+                Tuliskan analisis penjelasan teknikal terlebih dahulu, kemudian tampilkan parameter Entry/SL/TP menggunakan format HTML Card berikut:
+                {CARD_LAYOUT_INSTRUCTION}
                 """
                 result = call_gemini_api(api_key, prompt, uploaded_file.getvalue(), uploaded_file.type)
                 st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
-                st.markdown(result)
+                st.markdown(result, unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e: st.error(f"Error: {e}")
 
@@ -322,6 +350,6 @@ with tab4:
                     """
                     result = call_gemini_api(api_key, prompt)
                     st.markdown("<div class='card-signal'>", unsafe_allow_html=True)
-                    st.markdown(result)
+                    st.markdown(result, unsafe_allow_html=True)
                     st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e: st.error(f"Error Analisis News: {e}")
