@@ -123,6 +123,22 @@ def calc_rsi(prices, period=14):
     if avg_loss == 0: return 100.0
     return 100.0 - (100.0 / (1.0 + (avg_gain / avg_loss)))
 
+def calc_atr(highs, lows, closes, period=14):
+    if not closes or len(closes) < period + 1: return None
+    tr_list = []
+    for i in range(1, len(closes)):
+        tr = max(
+            highs[i] - lows[i],
+            abs(highs[i] - closes[i-1]),
+            abs(lows[i] - closes[i-1])
+        )
+        tr_list.append(tr)
+    if len(tr_list) < period: return None
+    atr = sum(tr_list[:period]) / period
+    for i in range(period, len(tr_list)):
+        atr = (atr * (period - 1) + tr_list[i]) / period
+    return atr
+
 def fetch_klines(pair, timeframe="M15"):
     s = pair.upper().replace("/", "").replace(" ", "").strip()
     crypto_symbols = {"BTCUSDT": "BTC-USDT", "ETHUSDT": "ETH-USDT", "SOLUSDT": "SOL-USDT", "XRPUSDT": "XRP-USDT", "BNBUSDT": "BNB-USDT"}
@@ -177,7 +193,7 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
 
 # UI STREAMLIT
 st.title("⚡ AI Ultra Session SMC Analyst")
-st.caption("Anti-Fakeout SMC • Auto News Warning • Visual Cards Layout")
+st.caption("SMC + RSI Divergence Filter • ATR Dynamic SL Buffer • Visual Cards UI")
 
 # INFORMASI SESI REAL-TIME
 wib_time, active_sessions, current_killzone = get_market_session_info()
@@ -191,11 +207,11 @@ st.markdown(f"""
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. 📜 Riwayat Signal"])
 
-# INSTRUKSI LAYOUT HASIL ANALISIS (KARTU PENJELASAN + KARTU ENTRY ASLI)
+# INSTRUKSI LAYOUT HASIL ANALISIS (KARTU PENJELASAN CONFLUENCE + KARTU ENTRY VISUAL)
 COMBINED_LAYOUT_INSTRUCTION = """
-LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT (DILARANG MENGGUNAKAN PARAGRAF POLOS TEBAL PADA BAGIAN PENJELASAN):
+LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT:
 
-<!-- BAGIAN 1: KARTU VISUAL PENJELASAN ANALISIS (NEWS & SMC) -->
+<!-- BAGIAN 1: KARTU VISUAL PENJELASAN ANALISIS (NEWS, CONFLUENCE INDICATORS & SMC) -->
 <div style="background-color: #1a1e29; border: 1px solid #2e3548; border-radius: 10px; padding: 16px; margin-bottom: 15px;">
   
   <div style="background-color: #12151e; border-left: 4px solid #ff9800; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
@@ -203,22 +219,23 @@ LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT (DI
     <div style="color: #d1d4dc; font-size: 13px; line-height: 1.6;">
       • <b>Status / Peringatan News:</b> [Detail Jam WIB News & Peringatan]<br>
       • <b>Proyeksi Bias Sentimen:</b> [BUY (Bullish) / SELL (Bearish) / Neutral]<br>
-      • <b>Penjelasan Ringkas:</b> [Alasan sentimen pasar secara singkat dan jelas]
+      • <b>Penjelasan Ringkas:</b> [Alasan sentimen pasar secara singkat]
     </div>
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px;">
-    <div style="color: #00e676; font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ ANALISIS ANTI-FAKEOUT & STRUKTUR SMC</div>
+    <div style="color: #00e676; font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ CONFLUENCE FILTER (SMC + RSI DIVERGENCE + ATR BUFFER)</div>
     <div style="color: #d1d4dc; font-size: 13px; line-height: 1.6;">
-      • <b>Tren Utama Market:</b> [Bullish / Bearish / Ranging]<br>
-      • <b>Validasi Body Close (Anti-Fakeout):</b> [Penjelasan Body Close vs Wick Sweep Trap]<br>
-      • <b>Area FVG & Order Block:</b> [Level FVG & OB aktif terdekat]
+      • <b>Trend Utama & EMA:</b> [Bullish / Bearish berdasarkan EMA 20/50]<br>
+      • <b>Status RSI Divergence:</b> [Normal / Bearish Divergence (Hati-hati Fakeout Buy) / Bullish Divergence]<br>
+      • <b>Validasi Body Close (Anti-Fakeout):</b> [Status BOS/CHoCH Body Close vs Wick Sweep Trap]<br>
+      • <b>ATR Buffer SL:</b> [Toleransi jarak penyangga pips aman yang ditambahkan pada SL]
     </div>
   </div>
 
 </div>
 
-<!-- BAGIAN 2: KARTU VISUAL ENTRY / EKSEKUSI (KARTU ASLI YANG SUDAH BAGUS) -->
+<!-- BAGIAN 2: KARTU VISUAL ENTRY / EKSEKUSI (KARTU VISUAL UTAMA) -->
 <div style="background-color: #1a1e29; border: 1px solid #2e3548; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
   <div style="background-color: #2962ff; color: #ffffff; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 16px; margin-bottom: 12px; display: inline-block;">
     🎯 REKOMENDASI: [BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
@@ -231,9 +248,9 @@ LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT (DI
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #ff4444; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
-    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🛑 STOP LOSS (SL KETAT)</div>
-    <div style="color: #ff4444; font-size: 18px; font-weight: bold;">[Harga SL Rapat]</div>
-    <div style="color: #a0a5b5; font-size: 12px;">[Jarak Pips SL dari Entry]</div>
+    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🛑 STOP LOSS (SL KETAT + ATR BUFFER)</div>
+    <div style="color: #ff4444; font-size: 18px; font-weight: bold;">[Harga SL Aman dengan Tambahan Buffer ATR]</div>
+    <div style="color: #a0a5b5; font-size: 12px;">[Detail pips SL & penyangga ATR]</div>
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
@@ -275,20 +292,29 @@ with tab1:
 
     if st.button("Buat Signal Ultra Pro (Auto)", key="btn_signal"):
         if not api_key: st.error("⚠️ API Key belum dikonfigurasi!")
-        elif not pair: st.warning("⚠️ Pilih pair terlebih dahulu!")
+        elif not pair: st.warning("⚠️ Pilih pair terlebih dasar!")
         else:
             try:
-                with st.spinner(f"📊 Menarik data Sesi, News & Harga Real-Time {pair}..."):
+                with st.spinner(f"📊 Menarik data Sesi, Indikator & Harga Real-Time {pair}..."):
                     live_p = get_spot_price_mt5(pair)
                     closes, highs, lows = fetch_klines(pair, timeframe=tf)
                     
                     price_ref = f"{live_p:,.4f}" if live_p else (f"{closes[-1]:,.4f}" if closes else "Harga Pasar Terkini")
                     tech_data = f"Harga Spot Real-Time: {price_ref}\n"
                     if closes and len(closes) >= 50:
-                        tech_data += f"- RSI (14): {calc_rsi(closes, 14):.1f}\n- EMA 20: {calc_ema(closes, 20):.4f}\n- EMA 50: {calc_ema(closes, 50):.4f}\n- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
+                        rsi_v = calc_rsi(closes, 14)
+                        ema20_v = calc_ema(closes, 20)
+                        ema50_v = calc_ema(closes, 50)
+                        atr_v = calc_atr(highs, lows, closes, 14)
+                        
+                        tech_data += f"- RSI (14 Momentum): {rsi_v:.1f if rsi_v else 'N/A'}\n"
+                        tech_data += f"- EMA 20: {ema20_v:.4f if ema20_v else 'N/A'}\n"
+                        tech_data += f"- EMA 50: {ema50_v:.4f if ema50_v else 'N/A'}\n"
+                        tech_data += f"- ATR 14 (Nilai Volatilitas Buffer SL): {atr_v:.4f if atr_v else 'N/A'}\n"
+                        tech_data += f"- High 50-Candle: {max(highs[-50:]):.4f}\n- Low 50-Candle: {min(lows[-50:]):.4f}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Fundamental Analyst.
+                    Bertindaklah sebagai Senior Institutional Smart Money Concepts (SMC) Trader & Confluence Analyst.
                     Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
                     
                     KONDISI WAKTU & SESI PASAR REAL-TIME:
@@ -296,17 +322,14 @@ with tab1:
                     - Sesi Aktif: {active_sessions}
                     - Status Killzone: {current_killzone}
                     
-                    DATA PASAR & STRUKTUR HARGA:
+                    DATA PASAR & STRUKTUR HARGA INDIKATOR:
                     {tech_data}
 
-                    ATURAN INTEGRASI NEWS BERKALA:
-                    1. JIKA ANALISIS DILAKUKAN 1-2 JAM SEBELUM NEWS (misal jam 18.00 WIB): Berikan Peringatan News High Impact jam Rilis.
-                    2. JIKA ANALISIS DILAKUKAN MENDEKATI JAM RILIS (1 Jam Sebelum s.d. Jam Rilis News, contoh jam 18.30-19.30 WIB): Tuliskan prediksi bias (BUY/SELL) beserta alasan dampaknya.
-
-                    ATURAN ANTI-CANDLE PALSU / ANTI-FAKEOUT (SMC KETAT):
-                    1. CHoCH & BOS HANYA VALID jika CANDLE BODY CLOSE di luar level kunci (Wick sweep = Trap/Candle Palsu).
-                    2. JARAK STOP LOSS (SL) RAPAT: 15-30 pips di belakang FVG/OB terdekat.
-                    3. REWARD MINIMAL 1:2 (TP1 minimal 2x jarak SL).
+                    ATURAN CONFLUENCE & ANTI-FAKEOUT KETAT:
+                    1. RSI DIVERGENCE CHECK: Evaluasi apakah ada perbedaan arah antara pergerakan harga dan RSI (Bearish Divergence / Bullish Divergence). Jika ada Divergence berlawanan, BATALKAN ENTRY atau berikan peringatan FAKEOUT!
+                    2. SL BUFFER DINAMIS BERBASIS ATR: Jangan memasang Stop Loss pas di ujung Order Block/FVG. Tambahkan jarak buffer sebesar 0.5x s.d. 1x nilai ATR (penyangga pips aman) di luar ekor terluar untuk mencegah SL tersapu spread/wick hunting.
+                    3. VALIDASI BODY CLOSE: CHoCH & BOS HANYA VALID jika CANDLE BODY CLOSE di luar level kunci (Wick sweep = Trap/Candle Palsu).
+                    4. REWARD MINIMAL 1:2 (TP1 minimal 2x jarak SL).
 
                     FORMAT JAWABAN WAJIB MENGGUNAKAN LAYOUT DUA KARTU VISUAL BERIKUT:
                     {COMBINED_LAYOUT_INSTRUCTION}
@@ -336,7 +359,7 @@ with tab2:
                 gold_p = get_spot_price_mt5("XAUUSD")
                 btc_p = get_spot_price_mt5("BTCUSDT")
                 prompt = f"""
-                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions}), Deteksi Waktu News Hari Ini, Anti-Fakeout SMC (CHoCH, BOS, FVG) & RR Minimal 1:2:
+                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions}), Deteksi RSI Divergence, ATR SL Buffer, Anti-Fakeout SMC & RR Minimal 1:2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
@@ -360,7 +383,7 @@ with tab3:
             try:
                 prompt = f"""
                 Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
-                Evaluasi potensi News, CHoCH, BOS, FVG, Order Block, serta bedakan penembusan asli (Body Close) vs Candle Palsu (Wick Sweep).
+                Evaluasi RSI Divergence visual, ATR Buffer pada SL, CHoCH, BOS, FVG, Order Block, serta bedakan penembusan asli (Body Close) vs Candle Palsu (Wick Sweep).
                 
                 Susun hasil analisis menggunakan format Kartu Visual lengkap berikut:
                 {COMBINED_LAYOUT_INSTRUCTION}
