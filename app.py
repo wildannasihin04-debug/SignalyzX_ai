@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Ultra Session SMC Analyst (Full Confluence)",
+    page_title="AI Ultra Session SMC Analyst (Hardlock Trend)",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -139,16 +139,14 @@ def calc_atr(highs, lows, closes, period=14):
         atr = (atr * (period - 1) + tr_list[i]) / period
     return atr
 
-# KALKULASI FIBONACCI GOLDEN RATIO (0.618 & 0.786)
 def calc_fibonacci_golden_ratio(high_val, low_val):
     diff = high_val - low_val
-    fib_618_buy = high_val - (diff * 0.618)  # Retracment diskon untuk Buy
+    fib_618_buy = high_val - (diff * 0.618)
     fib_786_buy = high_val - (diff * 0.786)
-    fib_618_sell = low_val + (diff * 0.618)  # Retracement premium untuk Sell
+    fib_618_sell = low_val + (diff * 0.618)
     fib_786_sell = low_val + (diff * 0.786)
     return fib_618_buy, fib_786_buy, fib_618_sell, fib_786_sell
 
-# KALKULASI DAILY PIVOT POINTS (PP, R1, S1)
 def calc_pivot_points(high_val, low_val, close_val):
     pp = (high_val + low_val + close_val) / 3.0
     r1 = (2 * pp) - low_val
@@ -209,7 +207,7 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
 
 # UI STREAMLIT
 st.title("⚡ AI Ultra Session SMC Analyst")
-st.caption("SMC • Multi-EMA (20/50/200) • Fib Golden Ratio • Pivot Points • ATR Buffer")
+st.caption("Anti-Counter Trend Hardlock • Strict Multi-Timeframe Confluence • Professional UI")
 
 # INFORMASI SESI REAL-TIME
 wib_time, active_sessions, current_killzone = get_market_session_info()
@@ -223,7 +221,7 @@ st.markdown(f"""
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. 📜 Riwayat Signal"])
 
-# INSTRUKSI LAYOUT HASIL ANALISIS (KARTU PENJELASAN CONFLUENCE + KARTU ENTRY VISUAL)
+# INSTRUKSI LAYOUT HASIL ANALISIS
 COMBINED_LAYOUT_INSTRUCTION = """
 LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT:
 
@@ -240,14 +238,13 @@ LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT:
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px;">
-    <div style="color: #00e676; font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ FULL CONFLUENCE FILTER (SMC + EMA 200 + FIBONACCI + PIVOT)</div>
+    <div style="color: #00e676; font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ FULL CONFLUENCE FILTER (HARDLOCK TREND & ANTI-COUNTER)</div>
     <div style="color: #d1d4dc; font-size: 13px; line-height: 1.6;">
-      • <b>Trend Makro EMA (20/50/200):</b> [Status Konfirmasi Tren Besar & Alignment EMA]<br>
-      • <b>Golden Ratio Fibonacci (0.618 / 0.786):</b> [Kesesuaian Entry Zone dengan Level Fib 0.618/0.786]<br>
-      • <b>Daily Pivot Point Alignment:</b> [Posisi harga terhadap PP / S1 / R1]<br>
-      • <b>Status RSI Divergence:</b> [Normal / Bearish Divergence / Bullish Divergence]<br>
-      • <b>Validasi Body Close (Anti-Fakeout):</b> [Status BOS/CHoCH Body Close vs Wick Sweep Trap]<br>
-      • <b>ATR Buffer SL:</b> [Toleransi jarak penyangga pips aman yang ditambahkan pada SL]
+      • <b>Status Hardlock Tren:</b> [Penjelasan apakah tren BEARISH KUAT / BULLISH KUAT / CONSOLIDATION]<br>
+      • <b>Aturan Anti-Counter Trend:</b> [Mengapa HANYA BOLEH SELL / HANYA BOLEH BUY / BOLEH WAIT]<br>
+      • <b>Golden Ratio Fibonacci (0.618 / 0.786):</b> [Alignment Entry Zone dengan Level Fib]<br>
+      • <b>Daily Pivot Point Alignment:</b> [Posisi terhadap PP / S1 / R1]<br>
+      • <b>ATR Buffer SL:</b> [Toleransi penyangga pips aman yang ditambahkan pada SL]
     </div>
   </div>
 
@@ -260,7 +257,7 @@ LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT:
   </div>
   
   <div style="background-color: #12151e; border-left: 4px solid #2962ff; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
-    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🎯 ENTRY ZONE (DISCOUNT / FVG / FIB 0.618)</div>
+    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🎯 ENTRY ZONE (FOLLOW THE TREND CONFLUENCE)</div>
     <div style="color: #2962ff; font-size: 18px; font-weight: bold;">[Harga Entry Presisi]</div>
     <div style="color: #a0a5b5; font-size: 12px;">[Catatan Ringkas Skenario Entry]</div>
   </div>
@@ -274,7 +271,7 @@ LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT:
   <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
     <div style="color: #787b86; font-size: 12px; font-weight: bold;">🏆 TARGET PROFIT (RR MINIMAL 1:2+)</div>
     <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 1 (RR 1:2): <span style="font-size: 16px;">[Harga TP1]</span></div>
-    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 2 (RR 1:3): <span style="font-size: 16px;">[Harga TP2 / Pivot R1/S1]</span></div>
+    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 2 (RR 1:3): <span style="font-size: 16px;">[Harga TP2 / Pivot Level]</span></div>
     <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 3 (RR 1:4): <span style="font-size: 16px;">[Harga TP3]</span></div>
   </div>
 
@@ -313,12 +310,16 @@ with tab1:
         elif not pair: st.warning("⚠️ Pilih pair terlebih dahulu!")
         else:
             try:
-                with st.spinner(f"📊 Menarik data Multi-Confluence & Harga Real-Time {pair}..."):
+                with st.spinner(f"📊 Menarik data & mengunci Tren Utama {pair}..."):
                     live_p = get_spot_price_mt5(pair)
                     closes, highs, lows = fetch_klines(pair, timeframe=tf)
                     
                     price_ref = f"{live_p:,.4f}" if live_p else (f"{closes[-1]:,.4f}" if closes else "Harga Pasar Terkini")
                     tech_data = f"Harga Spot Real-Time: {price_ref}\n"
+                    
+                    trend_rule = "TREN NETRAL / KONSOLIDASI"
+                    trend_instruction = "HATI-HATI. UTAMAKAN MENCARI AREA ENTRY DENGAN RR TIDAK DIPAKSAKAN ATAU STATUS WAIT."
+                    
                     if closes and len(closes) >= 50:
                         rsi_v = calc_rsi(closes, 14)
                         ema20_v = calc_ema(closes, 20)
@@ -326,11 +327,22 @@ with tab1:
                         ema200_v = calc_ema(closes, 200) if len(closes) >= 200 else calc_ema(closes, len(closes)-1)
                         atr_v = calc_atr(highs, lows, closes, 14)
                         
+                        curr_p = live_p if live_p else closes[-1]
+                        
+                        # HARDLOCK LOGIC PADA PYTHON LEVELL
+                        if curr_p < ema50_v and curr_p < ema200_v:
+                            trend_rule = "🔴 STRONG BEARISH TREND (HARGA DI BAWAH EMA 50 & 200)"
+                            trend_instruction = "⚠️ DILARANG KERAS DAN HARAM MEMBUAT SINYAL BUY / BUY LIMIT! ANDA HANYA BOLEH MEMBUAT SINYAL SELL / SELL LIMIT ATAU STATUS WAIT! JANGAN PERNAH MENANGKAP PISAU JATUH!"
+                        elif curr_p > ema50_v and curr_p > ema200_v:
+                            trend_rule = "🟢 STRONG BULLISH TREND (HARGA DI ATAS EMA 50 & 200)"
+                            trend_instruction = "⚠️ DILARANG KERAS DAN HARAM MEMBUAT SINYAL SELL / SELL LIMIT! ANDA HANYA BOLEH MEMBUAT SINYAL BUY / BUY LIMIT ATAU STATUS WAIT!"
+
                         h50 = max(highs[-50:])
                         l50 = min(lows[-50:])
                         fib618_b, fib786_b, fib618_s, fib786_s = calc_fibonacci_golden_ratio(h50, l50)
                         pp, r1, s1 = calc_pivot_points(h50, l50, closes[-1])
                         
+                        tech_data += f"- STATUS HARDLOCK TREN: {trend_rule}\n"
                         tech_data += f"- RSI (14 Momentum): {rsi_v:.1f if rsi_v else 'N/A'}\n"
                         tech_data += f"- EMA 20: {ema20_v:.4f if ema20_v else 'N/A'} | EMA 50: {ema50_v:.4f if ema50_v else 'N/A'} | EMA 200: {ema200_v:.4f if ema200_v else 'N/A'}\n"
                         tech_data += f"- Fibonacci Golden Ratio Buy Zone (0.618/0.786): {fib618_b:.4f} / {fib786_b:.4f}\n"
@@ -339,7 +351,7 @@ with tab1:
                         tech_data += f"- ATR 14 (Volatilitas SL Buffer): {atr_v:.4f if atr_v else 'N/A'}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Senior Institutional SMC Trader & Multi-Confluence Strategist.
+                    Bertindaklah sebagai Senior Institutional SMC Trader & Anti-Counter Trend Strategist.
                     Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
                     
                     KONDISI WAKTU & SESI PASAR REAL-TIME:
@@ -347,15 +359,15 @@ with tab1:
                     - Sesi Aktif: {active_sessions}
                     - Status Killzone: {current_killzone}
                     
-                    DATA PASAR & MULTI-CONFLUENCE INDICATORS:
+                    DATA PASAR & STRUKTUR HARDLOCK:
                     {tech_data}
 
-                    ATURAN INTEGRASI ANALISIS PRESI TINGGI:
-                    1. HYBRID TREND (EMA 20/50/200 & RSI): Pastikan tren besar didukung oleh EMA 200 dan tidak terjadi RSI Bearish/Bullish Divergence yang memicu fakeout.
-                    2. FIBONACCI GOLDEN RATIO (0.618 / 0.786): Selaraskan Entry Zone SMC (FVG/OB) dengan level 0.618 atau 0.786 Fibonacci Retracement.
-                    3. PIVOT POINTS CONFLUENCE: Manfaatkan level PP, S1, dan R1 sebagai konfirmasi penahan harga dan target TP.
-                    4. SL BUFFER DINAMIS ATR: Tambahkan penyangga ATR pada Stop Loss di luar ekor terluar.
-                    5. VALIDASI BODY CLOSE: CHoCH & BOS HANYA VALID jika CANDLE BODY CLOSE di luar level kunci.
+                    ATURAN MUTLAK SISTEM (HARAM DILANGGAR):
+                    {trend_instruction}
+
+                    1. FOLLOW THE TREND: Jangan pernah melawan momentum tren utama. 
+                    2. FIBONACCI & PIVOT ALIGNMENT: Cocokkan Entry Zone dengan level Golden Ratio 0.618/0.786 dan Pivot Point.
+                    3. SL BUFFER ATR: Berikan tambahan jarak buffer SL aman.
 
                     FORMAT JAWABAN WAJIB MENGGUNAKAN LAYOUT DUA KARTU VISUAL BERIKUT:
                     {COMBINED_LAYOUT_INSTRUCTION}
@@ -385,7 +397,7 @@ with tab2:
                 gold_p = get_spot_price_mt5("XAUUSD")
                 btc_p = get_spot_price_mt5("BTCUSDT")
                 prompt = f"""
-                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions}), Multi-EMA (200), Fib 0.618/0.786, Pivot Points, SMC Anti-Fakeout & RR Minimal 1:2:
+                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions}), Hardlock Trend (Anti-Counter Trend), Multi-EMA (200), Fib 0.618/0.786, Pivot Points & RR Minimal 1:2:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
@@ -409,7 +421,7 @@ with tab3:
             try:
                 prompt = f"""
                 Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
-                Evaluasi alignment Fib Golden Ratio 0.618/0.786, Pivot Points, EMA 200, ATR Buffer SL, CHoCH, BOS, FVG, Order Block, serta Body Close vs Wick Sweep.
+                Pastikan analisis TIDAK MELAWAN TREN BESAR (Anti-Counter Trend). Evaluasi Fib Golden Ratio 0.618/0.786, Pivot Points, ATR Buffer SL, CHoCH, BOS, FVG, Order Block, serta Body Close vs Wick Sweep.
                 
                 Susun hasil analisis menggunakan format Kartu Visual lengkap berikut:
                 {COMBINED_LAYOUT_INSTRUCTION}
