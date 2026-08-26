@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 # Konfigurasi Tampilan Website
 st.set_page_config(
-    page_title="AI Ultra Session SMC Analyst (Hardlock Trend)",
+    page_title="AI Ultra Session SMC Analyst (Dynamic Structural TP)",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -207,7 +207,7 @@ def call_gemini_api(api_key_str, prompt, image_bytes=None, mime_type="image/jpeg
 
 # UI STREAMLIT
 st.title("⚡ AI Ultra Session SMC Analyst")
-st.caption("Anti-Counter Trend Hardlock • Strict Multi-Timeframe Confluence • Professional UI")
+st.caption("Anti-Counter Trend Hardlock • Dynamic Structural TP • Adaptive RR")
 
 # INFORMASI SESI REAL-TIME
 wib_time, active_sessions, current_killzone = get_market_session_info()
@@ -221,7 +221,7 @@ st.markdown(f"""
 
 tab1, tab2, tab3, tab4 = st.tabs(["01. Buat Signal Pro", "02. Signal Hari Ini", "03. Analisa Chart", "04. 📜 Riwayat Signal"])
 
-# INSTRUKSI LAYOUT HASIL ANALISIS
+# INSTRUKSI LAYOUT HASIL ANALISIS DENGAN TP DINAMIS STRUKTURAL
 COMBINED_LAYOUT_INSTRUCTION = """
 LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT:
 
@@ -238,47 +238,47 @@ LAKUKAN PENYUSUNAN RESPON DALAM 2 BAGIAN UTAMA MENGGUNAKAN HTML CARD BERIKUT:
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px;">
-    <div style="color: #00e676; font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ FULL CONFLUENCE FILTER (HARDLOCK TREND & ANTI-COUNTER)</div>
+    <div style="color: #00e676; font-weight: bold; font-size: 14px; margin-bottom: 6px;">🛡️ FULL CONFLUENCE FILTER (HARDLOCK TREND & DYNAMIC STRUCTURE)</div>
     <div style="color: #d1d4dc; font-size: 13px; line-height: 1.6;">
-      • <b>Status Hardlock Tren:</b> [Penjelasan apakah tren BEARISH KUAT / BULLISH KUAT / CONSOLIDATION]<br>
-      • <b>Aturan Anti-Counter Trend:</b> [Mengapa HANYA BOLEH SELL / HANYA BOLEH BUY / BOLEH WAIT]<br>
+      • <b>Status Hardlock Tren:</b> [Penjelasan BEARISH KUAT / BULLISH KUAT / CONSOLIDATION]<br>
+      • <b>Aturan Anti-Counter Trend:</b> [HANYA BOLEH SELL / HANYA BOLEH BUY / BOLEH WAIT]<br>
       • <b>Golden Ratio Fibonacci (0.618 / 0.786):</b> [Alignment Entry Zone dengan Level Fib]<br>
       • <b>Daily Pivot Point Alignment:</b> [Posisi terhadap PP / S1 / R1]<br>
-      • <b>ATR Buffer SL:</b> [Toleransi penyangga pips aman yang ditambahkan pada SL]
+      • <b>ATR Buffer SL:</b> [Toleransi penyangga pips aman pada SL]
     </div>
   </div>
 
 </div>
 
-<!-- BAGIAN 2: KARTU VISUAL ENTRY / EKSEKUSI (KARTU VISUAL UTAMA) -->
+<!-- BAGIAN 2: KARTU VISUAL ENTRY / EKSEKUSI (TARGET PROFIT DINAMIS STRUKTURAL) -->
 <div style="background-color: #1a1e29; border: 1px solid #2e3548; border-radius: 10px; padding: 18px; margin-bottom: 15px;">
   <div style="background-color: #2962ff; color: #ffffff; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 16px; margin-bottom: 12px; display: inline-block;">
     🎯 REKOMENDASI: [BUY LIMIT / SELL LIMIT / BUY / SELL / WAIT]
   </div>
   
   <div style="background-color: #12151e; border-left: 4px solid #2962ff; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
-    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🎯 ENTRY ZONE (FOLLOW THE TREND CONFLUENCE)</div>
+    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🎯 ENTRY ZONE (DISCOUNT / FVG)</div>
     <div style="color: #2962ff; font-size: 18px; font-weight: bold;">[Harga Entry Presisi]</div>
     <div style="color: #a0a5b5; font-size: 12px;">[Catatan Ringkas Skenario Entry]</div>
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #ff4444; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
     <div style="color: #787b86; font-size: 12px; font-weight: bold;">🛑 STOP LOSS (SL KETAT + ATR BUFFER)</div>
-    <div style="color: #ff4444; font-size: 18px; font-weight: bold;">[Harga SL Aman dengan Tambahan Buffer ATR]</div>
+    <div style="color: #ff4444; font-size: 18px; font-weight: bold;">[Harga SL Aman]</div>
     <div style="color: #a0a5b5; font-size: 12px;">[Detail pips SL & penyangga ATR]</div>
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #00e676; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
-    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🏆 TARGET PROFIT (RR MINIMAL 1:2+)</div>
-    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 1 (RR 1:2): <span style="font-size: 16px;">[Harga TP1]</span></div>
-    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 2 (RR 1:3): <span style="font-size: 16px;">[Harga TP2 / Pivot Level]</span></div>
-    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 3 (RR 1:4): <span style="font-size: 16px;">[Harga TP3]</span></div>
+    <div style="color: #787b86; font-size: 12px; font-weight: bold;">🏆 TARGET PROFIT DINAMIS (BERDASARKAN STRUKTUR & PIVOT REALISTIS)</div>
+    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 1 (High/Low Lokal Terdekat): <span style="font-size: 16px;">[Harga TP1 Realistis]</span></div>
+    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 2 (Pivot R1/S1 / FVG Fill): <span style="font-size: 16px;">[Harga TP2 Realistis]</span></div>
+    <div style="color: #00e676; font-size: 14px; font-weight: bold;">• TP 3 (Major Swing Liquidity): <span style="font-size: 16px;">[Harga TP3]</span></div>
   </div>
 
   <div style="background-color: #12151e; border-left: 4px solid #ffd600; padding: 12px; border-radius: 6px;">
     <div style="color: #ffd600; font-size: 13px; font-weight: bold;">💡 SARAN LOT & PENGAMANAN PROFIT</div>
     <div style="color: #d1d4dc; font-size: 13px;"><b>Ukuran Lot Aman:</b> [Saran Lot, misal 0.01 Micro Lot]</div>
-    <div style="color: #d1d4dc; font-size: 13px;"><b>Rule Breakeven (BE):</b> [Harga pemicu geser SL ke Entry]</div>
+    <div style="color: #d1d4dc; font-size: 13px;"><b>Rule Breakeven (BE):</b> [Geser SL ke Entry segera setelah menyentuh TP1]</div>
   </div>
 </div>
 """
@@ -310,7 +310,7 @@ with tab1:
         elif not pair: st.warning("⚠️ Pilih pair terlebih dahulu!")
         else:
             try:
-                with st.spinner(f"📊 Menarik data & mengunci Tren Utama {pair}..."):
+                with st.spinner(f"📊 Menarik data & menghitung Target Dinamis {pair}..."):
                     live_p = get_spot_price_mt5(pair)
                     closes, highs, lows = fetch_klines(pair, timeframe=tf)
                     
@@ -318,7 +318,7 @@ with tab1:
                     tech_data = f"Harga Spot Real-Time: {price_ref}\n"
                     
                     trend_rule = "TREN NETRAL / KONSOLIDASI"
-                    trend_instruction = "HATI-HATI. UTAMAKAN MENCARI AREA ENTRY DENGAN RR TIDAK DIPAKSAKAN ATAU STATUS WAIT."
+                    trend_instruction = "HATI-HATI. UTAMAKAN MENCARI AREA ENTRY DENGAN DYNAMIC TARGET ATAU STATUS WAIT."
                     
                     if closes and len(closes) >= 50:
                         rsi_v = calc_rsi(closes, 14)
@@ -329,13 +329,12 @@ with tab1:
                         
                         curr_p = live_p if live_p else closes[-1]
                         
-                        # HARDLOCK LOGIC PADA PYTHON LEVELL
                         if curr_p < ema50_v and curr_p < ema200_v:
                             trend_rule = "🔴 STRONG BEARISH TREND (HARGA DI BAWAH EMA 50 & 200)"
-                            trend_instruction = "⚠️ DILARANG KERAS DAN HARAM MEMBUAT SINYAL BUY / BUY LIMIT! ANDA HANYA BOLEH MEMBUAT SINYAL SELL / SELL LIMIT ATAU STATUS WAIT! JANGAN PERNAH MENANGKAP PISAU JATUH!"
+                            trend_instruction = "⚠️ DILARANG KERAS MEMBUAT SINYAL BUY / BUY LIMIT! HANYA BOLEH SELL / SELL LIMIT ATAU WAIT!"
                         elif curr_p > ema50_v and curr_p > ema200_v:
                             trend_rule = "🟢 STRONG BULLISH TREND (HARGA DI ATAS EMA 50 & 200)"
-                            trend_instruction = "⚠️ DILARANG KERAS DAN HARAM MEMBUAT SINYAL SELL / SELL LIMIT! ANDA HANYA BOLEH MEMBUAT SINYAL BUY / BUY LIMIT ATAU STATUS WAIT!"
+                            trend_instruction = "⚠️ DILARANG KERAS MEMBUAT SINYAL SELL / SELL LIMIT! HANYA BOLEH BUY / BUY LIMIT ATAU WAIT!"
 
                         h50 = max(highs[-50:])
                         l50 = min(lows[-50:])
@@ -351,7 +350,7 @@ with tab1:
                         tech_data += f"- ATR 14 (Volatilitas SL Buffer): {atr_v:.4f if atr_v else 'N/A'}\n"
 
                     prompt = f"""
-                    Bertindaklah sebagai Senior Institutional SMC Trader & Anti-Counter Trend Strategist.
+                    Bertindaklah sebagai Senior Institutional SMC Trader & Dynamic Structure Strategist.
                     Analisis {pair} (Gaya: {gaya}, Timeframe Utama: {tf}).
                     
                     KONDISI WAKTU & SESI PASAR REAL-TIME:
@@ -362,12 +361,13 @@ with tab1:
                     DATA PASAR & STRUKTUR HARDLOCK:
                     {tech_data}
 
-                    ATURAN MUTLAK SISTEM (HARAM DILANGGAR):
-                    {trend_instruction}
-
-                    1. FOLLOW THE TREND: Jangan pernah melawan momentum tren utama. 
-                    2. FIBONACCI & PIVOT ALIGNMENT: Cocokkan Entry Zone dengan level Golden Ratio 0.618/0.786 dan Pivot Point.
-                    3. SL BUFFER ATR: Berikan tambahan jarak buffer SL aman.
+                    ATURAN TARGET PROFIT DINAMIS (PENTING & WAJIB):
+                    1. JANGAN MEMAKSAKAN RASIO RR FIX/KAKU (seperti memaksakan 1:3/1:4 jika struktur pasar tidak sampai).
+                    2. SESUAIKAN TARGET PROFIT DENGAN STRUKTUR REALISTIS PASAR:
+                       - TP1: Dipasang pada High/Low Lokal Terdekat atau FVG fill terdekat (Biar cepat tersentuh & amankan akun).
+                       - TP2: Dipasang pada area Pivot Point (R1/S1) atau struktur swing terdekat berikutnya.
+                       - TP3: Dipasang pada major liquidity pool (opsional jika momentum tren sangat kuat).
+                    3. BANYAKKAN FOKUS AGAR TP1 CEPAT CAPAI: Segera setelah TP1 tersentuh, instruksikan user untuk Partial Close dan geser SL ke Breakeven (BE).
 
                     FORMAT JAWABAN WAJIB MENGGUNAKAN LAYOUT DUA KARTU VISUAL BERIKUT:
                     {COMBINED_LAYOUT_INSTRUCTION}
@@ -397,7 +397,7 @@ with tab2:
                 gold_p = get_spot_price_mt5("XAUUSD")
                 btc_p = get_spot_price_mt5("BTCUSDT")
                 prompt = f"""
-                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions}), Hardlock Trend (Anti-Counter Trend), Multi-EMA (200), Fib 0.618/0.786, Pivot Points & RR Minimal 1:2:
+                Berikan 2 signal harian terbaik saat ini berdasarkan Sesi Pasar ({active_sessions}), Dynamic Structural TP (Target Realistis), Hardlock Trend, Fib 0.618/0.786 & Pivot Points:
                 1. XAUUSD (Harga Live Spot: {gold_p if gold_p else 'Pasar Terkini'})
                 2. BTCUSDT (Harga Live Spot: {btc_p if btc_p else 'Pasar Terkini'})
                 
@@ -421,7 +421,7 @@ with tab3:
             try:
                 prompt = f"""
                 Analisis screenshot chart {chart_pair} TF {chart_tf} ini layaknya Session SMC Analyst (Sesi {active_sessions}).
-                Pastikan analisis TIDAK MELAWAN TREN BESAR (Anti-Counter Trend). Evaluasi Fib Golden Ratio 0.618/0.786, Pivot Points, ATR Buffer SL, CHoCH, BOS, FVG, Order Block, serta Body Close vs Wick Sweep.
+                Evaluasi level struktur realistis untuk Target Profit Dinamis (TP1, TP2, TP3) berbasis area benteng Support/Resistance terdekat pada chart.
                 
                 Susun hasil analisis menggunakan format Kartu Visual lengkap berikut:
                 {COMBINED_LAYOUT_INSTRUCTION}
